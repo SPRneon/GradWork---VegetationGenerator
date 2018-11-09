@@ -1,0 +1,26 @@
+{
+    "FileVersion" : 3,
+    "Version" : 1,
+    "VersionName" : "1.0",
+    "FriendlyName" : "VegetationGenerator",
+    "Description" : "GradWork",
+    "Category" : "Unknown Category.Set category in .uplugin file",
+    "CreatedBy" : "Zeno Watteeuw",
+    "CreatedByURL" : "",
+    "DocsURL" : "",
+    "MarketplaceURL" : "",
+    "SupportURL" : "",
+    "EnabledByDefault" : true,
+    "Modules" :
+    [
+        {
+            "Name" : "VegetationGeneratorRuntime",
+            "Type" : "Runtime",
+            "LoadingPhase" : "PreDefault"
+        }
+		{
+            "Name" : "VegetationGeneratorEditor",
+            "Type" : "Editor",           
+        }
+    ]
+}
