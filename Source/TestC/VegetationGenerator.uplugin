@@ -13,11 +13,6 @@
     "EnabledByDefault" : true,
     "Modules" :
     [
-        {
-            "Name" : "VegetationGeneratorRuntime",
-            "Type" : "Runtime",
-            "LoadingPhase" : "PreDefault"
-        }
 		{
             "Name" : "VegetationGeneratorEditor",
             "Type" : "Editor",           
