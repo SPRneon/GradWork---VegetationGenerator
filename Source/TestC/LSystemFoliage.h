@@ -56,7 +56,7 @@ public:
      TArray<USplineComponent*> m_SplineComponents;
 private:
 	
-	
+	void CreateFoliageTypeInstance();
 
 	//Data
 	

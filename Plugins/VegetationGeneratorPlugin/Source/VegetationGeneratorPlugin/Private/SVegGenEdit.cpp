@@ -29,6 +29,8 @@
 #include "SSeparator.h"
 #include "SErrorText.h"
 
+//#include "TestC/LSystemFoliage.h"
+
 #define LOCTEXT_NAMESPACE "VegGenEd_Mode"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
@@ -67,13 +69,27 @@ void SVegGenEdit::Construct(const FArguments& InArgs)
 			+SVerticalBox::Slot()
 			.AutoHeight()
 			[
-				SNew(SHorizontalBox)
+				SNew(SBox)
+								.WidthOverride(100.f)
+								.HeightOverride(25.f)
+								[
+									SNew(SButton)
+									.HAlign(HAlign_Center)
+									.VAlign(VAlign_Center)
+									.OnClicked(this, &SVegGenEdit::DoTestPrint)
+									.Text(LOCTEXT("SelectInvalidInstances", "Test Print"))
+									.ToolTipText(LOCTEXT("SelectInvalidInstances_Tooltip", "Do a test print"))
+						
+								]
+				
+
+			/*	SNew(SHorizontalBox)
 				+SHorizontalBox::Slot()
 				.AutoWidth()
 			.Padding(1.f,5.f,0.f,5.f)
 			[
 				BuildToolBar()
-			]
+			]*/
 			
 		]
 		]
@@ -135,6 +151,24 @@ FText SVegGenEdit::GetVegGenEditorErrorText() const
 	}
 
 	return FText::GetEmpty();
+}
+
+FReply SVegGenEdit::DoTestPrint()
+{
+	UE_LOG(LogTemp,Log,TEXT("Test"));
+
+	return FReply::Handled();
+}
+
+FReply SVegGenEdit::SpawnTest()
+{
+	//auto actor = NewObject<ALSystemFoliage>();
+	
+	//GEditor->GetEditorWorldContext().World()->SpawnActor(actor->GetClass());
+	
+	return FReply::Handled();
+
+
 }
 
 

@@ -181,6 +181,11 @@ private:
 //
 //	/** Checks if the SpawnInCurrentLevelMode checkbox should appear. Dependant on the current tool being used. */
 //	EVisibility GetVisibility_SpawnInCurrentLevelMode() const;
+
+FReply DoTestPrint();
+
+FReply SpawnTest();
+
 //
 private:	// SELECTION
 //

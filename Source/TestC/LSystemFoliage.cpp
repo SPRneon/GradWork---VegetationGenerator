@@ -9,6 +9,9 @@
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Runtime/Foliage/Public/InstancedFoliageActor.h"
+#include "EngineUtils.h"
 #include "ConstructorHelpers.h"
 
 // Sets default values
@@ -44,6 +47,7 @@ TArray<USplineComponent*>& ALSystemFoliage::GetSplineComponentArray()
 	return m_SplineComponents;
 }
 
+
 // Called when the game starts or when spawned
 void ALSystemFoliage::BeginPlay()
 {
@@ -65,7 +69,7 @@ void ALSystemFoliage::PostActorCreated()
 	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);	
 	CreateSplines(m_RootTree);
 
-
+	CreateFoliageTypeInstance();
 	
 	
 }
@@ -119,6 +123,35 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 
 
 }
+
+void ALSystemFoliage::CreateFoliageTypeInstance()
+{
+	//TActorIterator<AInstancedFoliageActor> foliageIterator(GetWorld());
+	//AInstancedFoliageActor* foliageActor = *foliageIterator;
+
+	//TArray<UInstancedStaticMeshComponent*> components;
+ //   foliageActor->GetComponents<UInstancedStaticMeshComponent>(components);
+ //   //UInstancedStaticMeshComponent* meshComponent = components[0];
+
+
+	UInstancedStaticMeshComponent* meshComponent = NewObject<UInstancedStaticMeshComponent>(Root, UInstancedStaticMeshComponent::StaticClass(), NAME_None, RF_Transactional);
+     meshComponent->AttachTo(Root);
+     meshComponent->SetStaticMesh(Mesh->GetStaticMesh());
+     meshComponent->RegisterComponent();
+
+
+	FTransform transform = FTransform();
+     for (int32 x = 1; x < 20; x++)
+     {
+         for (int32 y = 1; y < 20; y++)
+         {
+             transform.SetLocation(FVector(1000.f * x, 1000.f * y, 0.f));
+             meshComponent->AddInstance(transform);
+         }
+     }
+
+}
+
 
 
 
