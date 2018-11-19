@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/SplineComponent.h"
-
+#include "Components/SplineMeshComponent.h"
 #include "Helpers.h"
 #include "LSystemFoliage.generated.h"
 
@@ -32,6 +32,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostActorCreated() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
+	
 
 public:	
 	// Called every frame
@@ -54,6 +56,9 @@ public:
 	/**Spline component*/
      UPROPERTY(EditAnywhere, Category = Lindenmayer)
      TArray<USplineComponent*> m_SplineComponents;
+	/**SplineMesh component*/
+     UPROPERTY(EditAnywhere, Category = Lindenmayer)
+     TArray<USplineMeshComponent*> m_SplineMeshComponents;
 private:
 	
 	void CreateFoliageTypeInstance();

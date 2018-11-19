@@ -28,7 +28,7 @@ ALSystemFoliage::ALSystemFoliage()
 	Mesh->SetStaticMesh(MeshObj.Object);
 	Mesh->SetWorldScale3D(FVector(0.25f,0.25f,0.25f));
 	//Mesh->AttachToComponent(Root,FAttachmentTransformRules::KeepWorldTransform);
-	Mesh->AttachTo(Root);
+	//Mesh->AttachTo(Root);
 
 	//auto newSpline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
 	//m_SplineComponents.Add(newSpline);
@@ -64,14 +64,24 @@ void ALSystemFoliage::Tick(float DeltaTime)
 
 void ALSystemFoliage::PostActorCreated()
 {
-	Initialize(ELSystemType::PLANT,3);
+	/*Initialize(ELSystemType::PLANT,3);
+	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
+	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);	
+	CreateSplines(m_RootTree);
+
+	CreateFoliageTypeInstance();*/
+	
+	
+}
+
+void ALSystemFoliage::OnConstruction(const FTransform& Transform)
+{
+		Initialize(ELSystemType::PLANT,3);
 	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
 	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);	
 	CreateSplines(m_RootTree);
 
 	CreateFoliageTypeInstance();
-	
-	
 }
 
 void ALSystemFoliage::CreateSplines(UTree* tree)
@@ -93,6 +103,27 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 		AddOwnedComponent(newSpline);
 		newSpline->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
 		m_SplineComponents.Add(newSpline);
+
+		if(newSpline->GetNumberOfSplinePoints() > 1){
+			for(auto i = 0; i < newSpline->GetNumberOfSplinePoints() - 1; ++i)
+			{
+				auto startPos =newSpline->GetLocationAtSplinePoint(i,ESplineCoordinateSpace::World);
+				auto startTans =newSpline->GetTangentAtSplinePoint(i,ESplineCoordinateSpace::World);
+				auto endPos =newSpline->GetLocationAtSplinePoint(i+1,ESplineCoordinateSpace::World);
+				auto endTan =newSpline->GetTangentAtSplinePoint(i+1,ESplineCoordinateSpace::World);
+
+				auto newSplineMesh = NewObject<USplineMeshComponent>(this);
+				newSplineMesh->SetStaticMesh(Mesh->GetStaticMesh());
+				newSplineMesh->SetStartAndEnd(startPos,startTans,endPos,endTan,true);
+
+				newSplineMesh->RegisterComponentWithWorld(GetWorld());
+				AddOwnedComponent(newSplineMesh);
+				newSplineMesh->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
+				m_SplineMeshComponents.Add(newSplineMesh);
+			}
+		}
+
+
 	}
 	
 
@@ -114,11 +145,16 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 		newSpline->SetUnselectedSplineSegmentColor(FLinearColor::Green);
 		AddOwnedComponent(newSpline);
 		newSpline->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
+
+		
+		auto newSplineMesh = NewObject<USplineMeshComponent>(this);
+		
+
 		m_SplineComponents.Add(newSpline);
 		}
 	}
 	
-
+	
 
 
 
@@ -140,7 +176,7 @@ void ALSystemFoliage::CreateFoliageTypeInstance()
      meshComponent->RegisterComponent();
 
 
-	FTransform transform = FTransform();
+	/*FTransform transform = FTransform();
      for (int32 x = 1; x < 20; x++)
      {
          for (int32 y = 1; y < 20; y++)
@@ -148,7 +184,7 @@ void ALSystemFoliage::CreateFoliageTypeInstance()
              transform.SetLocation(FVector(1000.f * x, 1000.f * y, 0.f));
              meshComponent->AddInstance(transform);
          }
-     }
+     }*/
 
 }
 

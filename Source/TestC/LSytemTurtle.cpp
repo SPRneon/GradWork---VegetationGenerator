@@ -131,7 +131,8 @@ void ULSystemTurtle::StartTurtle()
 		}
 		case '[':
 		{
-			level++;
+			if(i != 0)
+				level++;
 			auto newTree = NewObject<UTree>();
 			newTree->m_Root = curr;
 			newTree->level = level;
@@ -148,7 +149,9 @@ void ULSystemTurtle::StartTurtle()
 		{	
 			curr->m_LString.AppendChar(c);
 			--level;
-			curr = curr->m_Root;
+			if(level != -1)				
+				curr = curr->m_Root;
+
 			currOri = curr->m_EndOri;
 			currPos = curr->m_Points.Last();
 			break;
