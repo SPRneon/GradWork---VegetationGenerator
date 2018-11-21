@@ -3,6 +3,7 @@
 #include "LSytemTurtle.h"
 #include "LSystemTree.h"
 #include "Components/SplineComponent.h"
+#include <string>
 
 UTree* ULSystemTurtle::m_Tree = nullptr;
 
@@ -26,15 +27,11 @@ UTree* ULSystemTurtle::IterateTurtle(FString lString, USceneComponent* root, ELS
 	m_Tree = NewObject<UTree>();
 	m_Tree->m_StartPos = FVector::ZeroVector;
 	m_Tree->m_StartOri = rootOri;
+	m_Tree->m_Draw = true;
 	
-
-	//UE_LOG(LogTemp,Log,TEXT("StartOri: %s"), root)
 	SetVar(type);
-	StartTurtle();
+	return StartTurtle();
 
-
-	
-	return m_Tree;
 }
 
 void ULSystemTurtle::SetVar(ELSystemType type)
@@ -81,9 +78,10 @@ void ULSystemTurtle::SetVar(ELSystemType type)
 	}
 }
 
-void ULSystemTurtle::StartTurtle()
+UTree* ULSystemTurtle::StartTurtle()
 {
 	int level = m_Tree->level;
+	int deepLevel = level;
 	FVector currPos = m_Tree->m_StartPos;	
 	FVector currOri = m_Tree->m_StartOri;
 
@@ -109,8 +107,8 @@ void ULSystemTurtle::StartTurtle()
 		case 'F':
 		{	
 			
-
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currPos += (currOri * m_Growth);
 			curr->m_Draw = true;	
 			curr->m_Points.Add(currPos);		
@@ -118,14 +116,15 @@ void ULSystemTurtle::StartTurtle()
 		}
 		case '+':
 		{
-			UE_LOG(LogTemp,Log, TEXT("went in + while ori: %s"), *currOri.ToString())
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currOri =  currOri.RotateAngleAxis(m_Angle.X, currUp);
 			break;
 		}
 		case '-':
 		{
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currOri = currOri.RotateAngleAxis(-m_Angle.X, currUp);
 			break;
 		}
@@ -142,12 +141,15 @@ void ULSystemTurtle::StartTurtle()
 			curr->m_EndOri = currOri;
 			curr->m_Branches.Add(newTree);			
 			curr = newTree;
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			break;
 		}
 		case ']':
 		{	
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
+
 			--level;
 			if(level != -1)				
 				curr = curr->m_Root;
@@ -157,8 +159,9 @@ void ULSystemTurtle::StartTurtle()
 			break;
 		}
 		case 'X':
-		{			
-			curr->m_LString.AppendChar(c);
+		{	
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			break;
 		}
 		case '&':
@@ -170,21 +173,24 @@ void ULSystemTurtle::StartTurtle()
 		}
 		case '^':
 		{
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currOri = currOri.RotateAngleAxis(-m_Angle.Y, currRight);
 
 			break;
 		}
 		case '\\':
 		{
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currOri = currOri.RotateAngleAxis(m_Angle.Y, currFor);
 
 			break;
 		}
 		case '/':
 		{
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			currOri = currOri.RotateAngleAxis(-m_Angle.Y, currFor);
 
 			break;
@@ -192,7 +198,8 @@ void ULSystemTurtle::StartTurtle()
 		case '|':
 		{
 			currOri = currOri.RotateAngleAxis(180,currUp);
-			curr->m_LString.AppendChar(c);
+			curr->SetLString(curr->m_LString + c);
+			//curr->m_LString.AppendChar(c);
 			break;
 		}
 		default:
@@ -202,10 +209,12 @@ void ULSystemTurtle::StartTurtle()
 		curr->m_EndOri = currOri;
 		curr->m_EndPos = currPos;
 
+
+		if(level > deepLevel)
+			deepLevel = level;
 	}
 	
-
-
 	
+	return curr;
 }
 

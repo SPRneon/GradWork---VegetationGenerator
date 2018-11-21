@@ -23,7 +23,7 @@ public:
 		UFUNCTION(BlueprintCallable, Category = "Lindenmayer") static UTree* IterateTurtle(FString lString, USceneComponent* root, ELSystemType type = ELSystemType::PLANT);
 private:		
 	//Func
-	static void StartTurtle();
+	static UTree* StartTurtle();
 	static void SetVar(ELSystemType type);
 
 	//Rot Matrices

@@ -35,6 +35,18 @@ bool UTree::ShouldDraw() const
 	return m_Draw;
 }
 
+FString UTree::GetLString() const
+{
+	return m_LString;
+}
+
+void UTree::SetLString(FString lstring)
+{
+	m_LString = lstring;
+}
+
+
+
 
 
 

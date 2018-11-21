@@ -33,7 +33,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PostActorCreated() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
-	
+	virtual void PostEditMove(bool bFinished) override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
 public:	
 	// Called every frame
@@ -46,7 +47,10 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* Mesh = nullptr;
-	UPROPERTY(VisibleAnywhere)
+
+	UPROPERTY(EditAnywhere)
+	UStaticMeshComponent* SplineMesh = nullptr;
+	UPROPERTY(EditAnywhere)
 	int m_Generation = 1;
 	UPROPERTY(VisibleAnywhere)
 	ELSystemType m_Type = ELSystemType::PLANT;
@@ -59,16 +63,20 @@ public:
 	/**SplineMesh component*/
      UPROPERTY(EditAnywhere, Category = Lindenmayer)
      TArray<USplineMeshComponent*> m_SplineMeshComponents;
+
+	 
 private:
 	
 	void CreateFoliageTypeInstance();
+	void ResimulateTree();
+	void CreateSplineMeshComponents(USplineComponent* spline);
 
 	//Data
 	
 	FTransform m_Transform;
 	FVector2D m_Angle = FVector2D(0.f,0.f);
 	float m_GrowthDist = 0.0f;
-	UTree* m_RootTree;
+	UTree* m_RootTree = nullptr;
 	
 
 	//Systems

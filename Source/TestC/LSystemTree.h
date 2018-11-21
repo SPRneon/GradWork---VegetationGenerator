@@ -19,6 +19,8 @@ public:
 		UFUNCTION(BlueprintCallable, Category = "Lindenmayer") TArray<UTree*> GetBranches();
 		UFUNCTION(BlueprintCallable,Category = "LindenMayer") TArray<FVector> GetPoints() const;
 		UFUNCTION(BlueprintCallable,Category = "LindenMayer") bool ShouldDraw() const;
+		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  FString GetLString() const;
+		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  void SetLString(FString lstring);
 
 public:
 	UTree() {};

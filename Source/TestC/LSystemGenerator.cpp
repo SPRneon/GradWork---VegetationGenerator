@@ -18,8 +18,8 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 	{
 		UE_LOG(LogTemp, Log, TEXT("This is a plant"));
 		SetState("[F]");
-		//AddRule('F', "F-[[F]+[F]]+F[+F[F]]-[F]", '[', ']');
-		AddRule('F', "F+F");
+		AddRule('F', "+F[&&F]+F[^^F]+F", '[', ']');
+		AddRule('F', "F[F]F");
 		AddRule('F', "F[&+F]F[^-F]F", '[', ']');
 		break;
 	}
