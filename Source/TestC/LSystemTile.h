@@ -118,6 +118,7 @@ private:
 	int32 LastCancel;
 
 private:
+	float GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep);
 	float GetRandomGaussian();
 	FVector GetSeedOffset(const ALSystemFoliage* Inst, float MinDistance);
 };

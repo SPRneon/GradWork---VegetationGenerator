@@ -2,6 +2,10 @@
 
 #include "LSystemTile.h"
 #include "LSystemFoliage.h"
+#include "Engine/World.h"
+#include "LSystemFoliageSpawner.h"
+
+
 
 
 #define LOCTEXT_NAMESPACE "Lindenmayer"
@@ -60,8 +64,8 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size, 
 {
 	const FVector InitRadius = 100.f * Size; //TODO get maxradius instead of 100.f
 	{
-		ALSystemFoliage* NewInst = new ALSystemFoliage();
-		NewInst->GetActorLocation() = Location;
+		
+		
 
 		// make a new local random stream to avoid changes to instance randomness changing the position of all other procedural instances
 		FRandomStream LocalStream = RandomStream;
@@ -70,19 +74,40 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size, 
 		FRotator Rotation = {0,0,0};
 		Rotation.Yaw   = LocalStream.FRandRange(0,360);
 		Rotation.Pitch = LocalStream.FRandRange(0, 5);
-		NewInst->GetTransform().SetRotation(FQuat(Rotation));
-		NewInst->Initialize(InAge, Type);
-		
+
+
+		FActorSpawnParameters SpawnParams;		
+		ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(Location, Rotation,SpawnParams);
+		NewInst->m_Generation = InAge;
+		NewInst->m_Type = Type;
 		NewInst->GetTransform().SetScale3D(Size);
 		NewInst->bBlocker = bBlocker;
-		
+		//NewInst->Initialize()????
+
+
 		// Add the seed if possible
 		Broadphase.Insert(NewInst);
 		const bool bSurvived = HandleOverlaps(NewInst);
-		return bSurvived ? NewInst : nullptr;
+		return (bSurvived ? NewInst : nullptr);
 	}
 
 	return nullptr;
+}
+
+float ULSystemTile::GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep)
+{
+	const ALSystemFoliage* Type = Instance;
+	const int32 StepsLeft = Instance->MaxAge - SimulationStep;
+	const float InstanceMaxAge = Type->GetNextAge(Instance->m_Generation, StepsLeft);
+	const float NewInstanceMaxAge = Type->GetNextAge(NewInstanceAge, StepsLeft);
+
+	const float InstanceMaxScale = Type->GetScaleForAge(InstanceMaxAge);
+	const float NewInstanceMaxScale = Type->GetScaleForAge(NewInstanceMaxAge);
+
+	const float InstanceMaxRadius = InstanceMaxScale * Type->GetMaxRadius();
+	const float NewInstanceMaxRadius = NewInstanceMaxScale * Type->GetMaxRadius();
+
+	return InstanceMaxRadius + NewInstanceMaxRadius;
 }
 
 float ULSystemTile::GetRandomGaussian()
@@ -141,7 +166,7 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 			continue;
 		}
 
-		//const UFoliageType_InstancedStaticMesh* Type = Inst->Type;
+		
 
 		if (SimulationStep <= Inst->NumSteps  && Inst->bSpawnsInShade == bSimulateOnlyInShade)
 		{
@@ -149,14 +174,14 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 			{
 				//spread new seeds
 				const float NewAge = Inst->GetInitAge(RandomStream);
-				const float NewScale = Type->GetScaleForAge(NewAge);
+				const float NewScale = Inst->GetScaleForAge(NewAge);
 				const float MinDistanceToClear = GetSeedMinDistance(Inst, NewAge, SimulationStep);
-				const FVector GlobalOffset = GetSeedOffset(Type, MinDistanceToClear);
+				const FVector GlobalOffset = GetSeedOffset(Inst, MinDistanceToClear);
 				
 				if (GlobalOffset.SizeSquared2D() + SMALL_NUMBER > MinDistanceToClear*MinDistanceToClear)
 				{
-					const FVector NewLocation = GlobalOffset + Inst->Location;
-					if (FProceduralFoliageInstance* NewInstance = NewSeed(NewLocation, NewScale, Type, NewAge))
+					const FVector NewLocation = GlobalOffset + Inst->GetActorLocation();
+					if (ALSystemFoliage* NewInstance = NewSeed(NewLocation, FVector(NewScale), Inst->m_Type, NewAge))
 					{
 						NewSeeds.Add(NewInstance);
 					}
@@ -342,6 +367,122 @@ void ULSystemTile::StepSimulation()
 
 void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 {
+	const float SizeTenM2 = ( FoliageSpawner->TileSize * FoliageSpawner->TileSize ) / ( 1000.f * 1000.f );
+
+	TMap<int32,float> MaxShadeRadii;
+	TMap<int32, float> MaxCollisionRadii;
+	TMap<const ALSystemFoliage*, int32> SeedsLeftMap;
+	TMap<const ALSystemFoliage*, FRandomStream> RandomStreamPerType;
+
+	TArray<const ALSystemFoliage*> TypesToSeed;
+
+	for (const ALSystemFoliage* TypeInstance : FoliageSpawner->GetFoliageTypes())
+	{
+		if (UserCancelled()){ return; }
+		//const UFoliageType_InstancedStaticMesh* TypeInstance = FoliageTypeObject.GetInstance();
+		if (TypeInstance && TypeInstance->GetSpawnsInShade() == bSimulateOnlyInShade)
+		{
+			{	//compute the number of initial seeds
+				const int32 NumSeeds = FMath::RoundToInt(TypeInstance->GetSeedDensitySquared() * SizeTenM2);
+				SeedsLeftMap.Add(TypeInstance, NumSeeds);
+				if (NumSeeds > 0)
+				{
+					TypesToSeed.Add(TypeInstance);
+				}
+			}
+
+			{	//save the random stream per type
+				RandomStreamPerType.Add(TypeInstance, FRandomStream(TypeInstance->DistributionSeed + FoliageSpawner->RandomSeed + RandomSeed));
+			}
+
+			{	//compute the needed offsets for initial seed variance
+				const int32 DistributionSeed = TypeInstance->DistributionSeed;
+				const float MaxScale = TypeInstance->GetScaleForAge(TypeInstance->MaxAge);
+				const float TypeMaxCollisionRadius = MaxScale * TypeInstance->CollisionRadius;
+				if (float* MaxRadius = MaxCollisionRadii.Find(DistributionSeed))
+				{
+					*MaxRadius = FMath::Max(*MaxRadius, TypeMaxCollisionRadius);
+				}
+				else
+				{
+					MaxCollisionRadii.Add(DistributionSeed, TypeMaxCollisionRadius);
+				}
+
+				const float TypeMaxShadeRadius = MaxScale * TypeInstance->ShadeRadius;
+				if (float* MaxRadius = MaxShadeRadii.Find(DistributionSeed))
+				{
+					*MaxRadius = FMath::Max(*MaxRadius, TypeMaxShadeRadius);
+				}
+				else
+				{
+					MaxShadeRadii.Add(DistributionSeed, TypeMaxShadeRadius);
+				}
+			}
+			
+		}
+	}
+
+	int32 TypeIdx = -1;
+	const int32 NumTypes = TypesToSeed.Num();
+	int32 TypesLeftToSeed = NumTypes;
+	const int32 LastShadeCastingIndex = InstancesArray.Num() - 1; //when placing shade growth types we want to spawn in shade if possible
+	while (TypesLeftToSeed > 0)
+	{
+		if (UserCancelled()){ return; }
+		TypeIdx = (TypeIdx + 1) % NumTypes;	//keep cycling through the types that we spawn initial seeds for to make sure everyone gets fair chance
+
+		if (const ALSystemFoliage* Type = TypesToSeed[TypeIdx])
+		{
+			int32& SeedsLeft = SeedsLeftMap.FindChecked(Type);
+			if (SeedsLeft == 0)
+			{
+				continue;
+			}
+
+			const float NewAge = Type->GetInitAge(RandomStream);
+			const float Scale = Type->GetScaleForAge(NewAge);
+
+			FRandomStream& TypeRandomStream = RandomStreamPerType.FindChecked(Type);
+			float InitX = 0.f;
+			float InitY = 0.f;
+			float NeededRadius = 0.f;
+
+			if (bSimulateOnlyInShade && LastShadeCastingIndex >= 0)
+			{
+				const int32 InstanceSpawnerIdx = TypeRandomStream.FRandRange(0, LastShadeCastingIndex);
+				const ALSystemFoliage* Spawner = InstancesArray[InstanceSpawnerIdx];
+				InitX = Spawner->GetActorLocation().X;
+				InitY = Spawner->GetActorLocation().Y;
+				NeededRadius = Spawner->GetCollisionRadius() * (Scale + Spawner->GetScaleForAge(Spawner->m_Generation));
+			}
+			else
+			{
+				InitX = TypeRandomStream.FRandRange(0, FoliageSpawner->TileSize);
+				InitY = TypeRandomStream.FRandRange(0, FoliageSpawner->TileSize);
+				NeededRadius = MaxShadeRadii.FindRef(Type->DistributionSeed);
+			}
+
+			const float Rad = RandomStream.FRandRange(0, PI*2.f);
+			
+			
+			const FVector GlobalOffset = (RandomStream.FRandRange(0, Type->MaxInitialSeedOffset) + NeededRadius) * FVector(FMath::Cos(Rad), FMath::Sin(Rad), 0.f);
+
+			const float X = InitX + GlobalOffset.X;
+			const float Y = InitY + GlobalOffset.Y;
+
+			if (ALSystemFoliage* NewInst = NewSeed(FVector(X, Y, 0.f), FVector(Scale), Type->GetType(), NewAge))
+			{
+				OutInstances.Add(NewInst);
+			}
+
+			--SeedsLeft;
+			if (SeedsLeft == 0)
+			{
+				--TypesLeftToSeed;
+			}
+		}
+	}
+
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -18,8 +18,6 @@
 // Sets default values
 ALSystemFoliage::ALSystemFoliage()
 {
-
-
 	m_Transform = GetTransform();
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -36,9 +34,6 @@ ALSystemFoliage::ALSystemFoliage()
 	m_LeafMesh = LeafMeshObj.Object;	
 	m_IsAlive = true;	
 }
-
-
-
 
 void ALSystemFoliage::Initialize(int age, ELSystemType type)
 {
@@ -230,6 +225,13 @@ void ALSystemFoliage::CreateLeafMeshes(UTree* tree, USplineComponent* spline)
 
 
 }
+
+void ALSystemFoliage::AgeFoliage(int newAge)
+{
+	m_Generation = newAge;
+	ResimulateTree();
+}
+
 
 void ALSystemFoliage::ConvertMeshes()
 {

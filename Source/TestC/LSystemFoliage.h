@@ -62,6 +62,8 @@ public:
 	// Sets default values for this actor's properties
 	ALSystemFoliage();
 
+	
+
 	friend class ULSystemTile;
 
 	void Initialize(int age, ELSystemType type);

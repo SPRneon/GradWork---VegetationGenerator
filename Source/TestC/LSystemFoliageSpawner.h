@@ -44,7 +44,7 @@ public:
 
 private:
 	UPROPERTY(Category = Lindenmayer, EditAnywhere)
-	TArray<ELSystemType> m_LSystemTypes;
+	TArray<ALSystemFoliage*> m_LSystemTypes;
 
 	UPROPERTY()
 	bool bNeedsSimulation;
@@ -56,7 +56,7 @@ public:
 
 	int32 GetRandomNumber();
 
-	const TArray<ELSystemType>& GetFoliageTypes() const { return m_LSystemTypes; }
+	const TArray<ALSystemFoliage*>& GetFoliageTypes() const { return m_LSystemTypes; }
 
 	//void GetInstancesToSpawn(TArray<FProceduralFoliageInstance>& OutInstances, const FVector& Min = FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX), const FVector& Max = FVector(FLT_MAX, FLT_MAX, FLT_MAX) ) const;
 
