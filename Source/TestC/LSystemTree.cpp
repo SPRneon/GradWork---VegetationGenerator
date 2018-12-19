@@ -45,6 +45,18 @@ void UTree::SetLString(FString lstring)
 	m_LString = lstring;
 }
 
+float UTree::GetWidth() const
+{
+	return m_Width;
+}
+
+TArray<UTree::Leaf*> UTree::GetLeaves()
+{
+	return m_Leaves;
+}
+
+
+
 
 
 

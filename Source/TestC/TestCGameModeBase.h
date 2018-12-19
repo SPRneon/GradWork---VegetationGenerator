@@ -13,7 +13,7 @@ UCLASS()
 class TESTC_API ATestCGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+	void OnConstruction(const FTransform& Transform) override;
 	
 	
 	

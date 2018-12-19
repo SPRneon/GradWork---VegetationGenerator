@@ -13,6 +13,7 @@ FString ULSystemTurtle::m_LString = "";
 FRotator ULSystemTurtle::m_Rotator;
 FVector2D ULSystemTurtle::m_Angle;
 float ULSystemTurtle::m_Growth;
+float ULSystemTurtle::m_Width;
 
 
 
@@ -42,7 +43,8 @@ void ULSystemTurtle::SetVar(ELSystemType type)
 	{
 		m_Angle.X = 45.f;
 		m_Angle.Y = 22.5f;
-		m_Growth = 10.f;
+		m_Growth = 20.f;
+		m_Width = 2.0f;
 		break;
 	}
 	case ELSystemType::WEED:
@@ -84,6 +86,7 @@ UTree* ULSystemTurtle::StartTurtle()
 	int deepLevel = level;
 	FVector currPos = m_Tree->m_StartPos;	
 	FVector currOri = m_Tree->m_StartOri;
+	m_Tree->m_Width = m_Width;
 
 	FVector currUp = currOri.UpVector;
 	FVector currFor = currOri.UpVector;
@@ -138,6 +141,7 @@ UTree* ULSystemTurtle::StartTurtle()
 			newTree->m_StartPos = currPos;
 			newTree->m_Points.Add(currPos);
 			newTree->m_StartOri = currOri;
+			newTree->m_Width = m_Width - (0.25 * level);
 			curr->m_EndOri = currOri;
 			curr->m_Branches.Add(newTree);			
 			curr = newTree;
@@ -202,6 +206,16 @@ UTree* ULSystemTurtle::StartTurtle()
 			//curr->m_LString.AppendChar(c);
 			break;
 		}
+		case 'L':
+		{
+			auto newLeaf = new UTree::Leaf();
+			newLeaf->location = currPos;
+			newLeaf->orientation = currOri;
+			curr->m_Leaves.Add(newLeaf);
+			break;
+			
+		}
+
 		default:
 			break;
 		}

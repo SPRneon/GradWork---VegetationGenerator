@@ -43,7 +43,11 @@ public class VegetationGeneratorPlugin : ModuleRules
 				"InputCore",
 				"UnrealEd",
 				"LevelEditor",
-                "EditorStyle"
+                "EditorStyle",
+                "InputCore",
+                "Slate",
+				"SlateCore",
+                 "DetailCustomizations",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

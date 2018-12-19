@@ -3,26 +3,90 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Editor/PropertyEditor/Public/IDetailCustomization.h"
+#include "Editor/PropertyEditor/Public/DetailLayoutBuilder.h"
+#include "HAL/ThreadSafeCounter.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/Object.h"
+#include "Math/RandomStream.h"
+#include "Helpers.h"
+#include "LSystemFoliage.h"
 #include "LSystemFoliageSpawner.generated.h"
 
-UCLASS()
-class TESTC_API ALSystemFoliageSpawner : public AActor
+
+class UProceduralFoliageTile;
+
+
+/////////////////////////////////////////
+UCLASS(BlueprintType, Blueprintable)
+class TESTC_API ULSystemFoliageSpawner : public UObject
 {
-	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	ALSystemFoliageSpawner();
+	GENERATED_UCLASS_BODY()
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+public:
+	/** The seed used for generating the randomness of the simulation. */
+	UPROPERTY(Category = Lindenmayer, EditAnywhere, BlueprintReadOnly)
+	int32 RandomSeed;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	/** Length of the tile (in cm) along one axis. The total area of the tile will be TileSize*TileSize. */
+	UPROPERTY(Category = Lindenmayer, EditAnywhere, BlueprintReadOnly)
+	float TileSize;
 
-	
+	/** The number of unique tiles to generate. The final simulation is a procedurally determined combination of the various unique tiles. */
+	UPROPERTY(Category = Lindenmayer, EditAnywhere, BlueprintReadOnly)
+	int32 NumUniqueTiles;
+
+	/** Minimum size of the quad tree used during the simulation. Reduce if too many instances are in splittable leaf quads (as warned in the log). */
+	UPROPERTY(Category = Lindenmayer, EditAnywhere, BlueprintReadOnly)
+	float MinimumQuadTreeSize;
+
+	FThreadSafeCounter LastCancel;
+
+private:
+	UPROPERTY(Category = Lindenmayer, EditAnywhere)
+	TArray<ELSystemType> m_LSystemTypes;
+
+	UPROPERTY()
+	bool bNeedsSimulation;
+
+public:
+	//Functions
+	UFUNCTION(BlueprintCallable, Category = Lindenmayer)
+	void Simulate(int32 NumSteps = -1);
+
+	int32 GetRandomNumber();
+
+	const TArray<ELSystemType>& GetFoliageTypes() const { return m_LSystemTypes; }
+
+	//void GetInstancesToSpawn(TArray<FProceduralFoliageInstance>& OutInstances, const FVector& Min = FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX), const FVector& Max = FVector(FLT_MAX, FLT_MAX, FLT_MAX) ) const;
+
+	#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
+#endif
+
+	virtual void Serialize(FArchive& Ar);
+
+	/** Simulates tiles if needed */
+	void SimulateIfNeeded();
+
+	/** Takes a tile index and returns a random tile associated with that index. */
+	const UProceduralFoliageTile* GetRandomTile(int32 X, int32 Y);
+
+	/** Creates a temporary empty tile with the appropriate settings created for it. */
+	UProceduralFoliageTile* CreateTempTile();
+private:
+	private:
+	void CreateProceduralFoliageInstances();
+
+	bool AnyDirty() const;
+
+	void SetClean();
+
+private:
+	TArray<TWeakObjectPtr<UProceduralFoliageTile>> PrecomputedTiles;
+
+	FRandomStream RandomStream;
+
+
 	
 };

@@ -11,41 +11,42 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Runtime/Foliage/Public/InstancedFoliageActor.h"
+
 #include "EngineUtils.h"
 #include "ConstructorHelpers.h"
 
 // Sets default values
 ALSystemFoliage::ALSystemFoliage()
 {
+
+
+	m_Transform = GetTransform();
+
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));	
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> MeshObj(TEXT("/Engine/EngineMeshes/Cube.Cube"));
-	Mesh->SetStaticMesh(MeshObj.Object);
-	Mesh->SetWorldScale3D(FVector(0.125f,0.125f,0.125f));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> splineMesh(TEXT("/Game/VegetationGenerator/Branch_S.Branch_S"));
+	m_SplineMesh = splineMesh.Object;
 
-	SplineMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SplineMesh"));	
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> SplineMeshObj(TEXT("/Engine/EngineMeshes/Cube.Cube"));
-	SplineMesh->SetStaticMesh(SplineMeshObj.Object);
-	SplineMesh->SetWorldScale3D(FVector(0.125f,0.125f,0.125f));
-
-	//Mesh->AttachToComponent(Root,FAttachmentTransformRules::KeepWorldTransform);
-	//Mesh->AttachTo(Root);
-
-	//auto newSpline = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
-	//m_SplineComponents.Add(newSpline);
-	//m_SplineComponents[0]->AttachTo(Root);
 	
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> LeafMeshObj(TEXT("/Game/VegetationGenerator/Leaf.Leaf"));
+	m_LeafMesh = LeafMeshObj.Object;	
+	m_IsAlive = true;	
 }
 
-void ALSystemFoliage::Initialize(ELSystemType type, int gen)
+
+
+
+void ALSystemFoliage::Initialize(int age, ELSystemType type)
 {
+	m_Generation = age;
 	m_Type = type;
-	m_Generation = gen;
+	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
+	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);
+	CreateSplines(m_RootTree);
 }
 
 TArray<USplineComponent*>& ALSystemFoliage::GetSplineComponentArray()
@@ -70,23 +71,13 @@ void ALSystemFoliage::Tick(float DeltaTime)
 
 void ALSystemFoliage::PostActorCreated()
 {
-	/*Initialize(ELSystemType::PLANT,3);
-	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
-	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);	
-	CreateSplines(m_RootTree);
-
-	CreateFoliageTypeInstance();*/
-	
-	
+		
 }
 
 void ALSystemFoliage::OnConstruction(const FTransform& Transform)
 {
-	Initialize(ELSystemType::PLANT,3);
-	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
-	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);
-
-	CreateSplines(m_RootTree);
+	//(ELSystemType::PLANT,3);
+	
 
 	//CreateFoliageTypeInstance();
 }
@@ -103,12 +94,6 @@ void ALSystemFoliage::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 
 void ALSystemFoliage::PostEditMove(bool bFinished)
 {
-
-	//if(bFinished)
-		//ResimulateTree();
-
-
-
 
 }
 
@@ -147,8 +132,7 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 	{
 		auto branch = tree->GetBranches()[i];
 		if(branch->ShouldDraw())
-		{
-			
+		{			
 			auto newSpline  = NewObject<USplineComponent>(this);
 			auto points = branch->GetPoints();
 			newSpline->ClearSplinePoints();
@@ -162,7 +146,8 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 			m_SplineComponents.Add(newSpline);
 			newSpline->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
 			UE_LOG(LogTemp,Log,TEXT("ALSystemFoliage::CreateSplineMeshComponent: %s"), *branch->GetLString())
-			CreateSplineMeshComponents(newSpline);		
+			CreateSplineMeshComponents(newSpline, branch->GetWidth());
+			CreateLeafMeshes(branch, newSpline);
 		}
 	}
 
@@ -196,7 +181,7 @@ void ALSystemFoliage::CreateFoliageTypeInstance()
 
 }
 
-void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline)
+void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, float width)
 {
 	if(spline->GetNumberOfSplinePoints() > 1){
 
@@ -212,11 +197,11 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline)
 				
 				auto newSplineMesh = NewObject<USplineMeshComponent>(this);
 				
-				newSplineMesh->SetStaticMesh(SplineMesh->GetStaticMesh());
+				newSplineMesh->SetStaticMesh(m_SplineMesh);
 				newSplineMesh->SetMobility(EComponentMobility::Movable);
 				newSplineMesh->SetStartAndEnd(startPos,startTans,endPos,endTan,true);
-				newSplineMesh->SetStartScale(FVector2D(.025f,0.025f));
-				newSplineMesh->SetEndScale(FVector2D(.025f,0.025f));
+				newSplineMesh->SetStartScale(FVector2D(width,width));
+				newSplineMesh->SetEndScale(FVector2D(width,width));
 				m_SplineMeshComponents.Add(newSplineMesh);
 				newSplineMesh->RegisterComponentWithWorld(GetWorld());
 				AddOwnedComponent(newSplineMesh);
@@ -224,6 +209,55 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline)
 			}
 		}
 }
+
+void ALSystemFoliage::CreateLeafMeshes(UTree* tree, USplineComponent* spline)
+{
+
+	UInstancedStaticMeshComponent *ISMComp = NewObject<UInstancedStaticMeshComponent>(this);
+	ISMComp->RegisterComponent();
+	ISMComp->SetStaticMesh(m_LeafMesh);
+	ISMComp->SetFlags(RF_Transactional);
+	this->AddInstanceComponent(ISMComp);
+
+
+
+	for(auto i = 0; i < tree->GetLeaves().Num();++i)
+	{
+		auto newtran =  new FTransform();
+		newtran->SetLocation(tree->GetLeaves()[i]->location);	
+		newtran->SetRotation(tree->GetLeaves()[i]->orientation.ToOrientationQuat());
+	}
+
+
+}
+
+void ALSystemFoliage::ConvertMeshes()
+{
+	FVector ori, maxExt;
+	this->GetActorBounds(false, ori, maxExt);
+	
+	
+}
+
+ALSystemFoliage * ALSystemFoliage::Domination(ALSystemFoliage * A, ALSystemFoliage * B, ESimulationOverlap::Type OverlapType)
+{
+	return nullptr;
+}
+
+FBox ALSystemFoliage::GetBounds() const
+{
+	FVector ori, extent;
+	this->GetActorBounds(false,ori,extent);
+	return this->GetComponentsBoundingBox(false);
+	//return FBox(ori - extent/2, ori + extent/2);
+}
+
+float UFoliageType::GetInitAge(FRandomStream& RandomStream) const
+{
+	return RandomStream.FRandRange(0, MaxInitialAge);
+}
+
+
 
 
 
