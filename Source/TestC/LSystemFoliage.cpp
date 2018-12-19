@@ -239,6 +239,43 @@ void ALSystemFoliage::ConvertMeshes()
 	
 }
 
+float ALSystemFoliage::GetScaleForAge(const float Age) const
+{
+	const FRichCurve* Curve = ScaleCurve.GetRichCurveConst();
+	const float Time = FMath::Clamp(MaxAge == 0 ? 1.f : Age / MaxAge, 0.f, 1.f);
+	const float Scale = Curve->Eval(Time);
+	return ProceduralScale.Min + ProceduralScale.Size() * Scale;
+}
+
+float ALSystemFoliage::GetInitAge(FRandomStream & RandomStream) const
+{
+	return RandomStream.FRandRange(0, MaxInitialAge);
+}
+
+float ALSystemFoliage::GetNextAge(const float CurrentAge, const int32 NumSteps) const
+{
+	float NewAge = CurrentAge;
+	for (int32 Count = 0; Count < NumSteps; ++Count)
+	{
+		const float GrowAge = NewAge + 1;
+		if (GrowAge <= MaxAge)
+		{
+			NewAge = GrowAge;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return NewAge;
+}
+
+bool ALSystemFoliage::GetSpawnsInShade() const
+{
+	return bCanGrowInShade && bSpawnsInShade;
+}
+
 ALSystemFoliage * ALSystemFoliage::Domination(ALSystemFoliage * A, ALSystemFoliage * B, ESimulationOverlap::Type OverlapType)
 {
 	return nullptr;
@@ -252,10 +289,6 @@ FBox ALSystemFoliage::GetBounds() const
 	//return FBox(ori - extent/2, ori + extent/2);
 }
 
-float UFoliageType::GetInitAge(FRandomStream& RandomStream) const
-{
-	return RandomStream.FRandRange(0, MaxInitialAge);
-}
 
 
 
