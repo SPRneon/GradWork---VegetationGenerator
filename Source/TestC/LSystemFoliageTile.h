@@ -3,18 +3,5 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ProceduralFoliageTile.h"
-#include "LSystemFoliageTile.generated.h"
 
-/**
- * 
- */
-UCLASS()
-class TESTC_API ULSystemFoliageTile : public UProceduralFoliageTile
-{
-	GENERATED_BODY()
-	
-	
-	
-	
-};
+

@@ -17,10 +17,12 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 	case ELSystemType::PLANT:
 	{
 		UE_LOG(LogTemp, Log, TEXT("This is a plant"));
-		SetState("[F]");
-		AddRule('F', "+F[&&F]+F[^^F]+F", '[', ']');
-		AddRule('F', "F[F]F");
-		AddRule('F', "F[&+F]F[^-F]F", '[', ']');
+		SetState("F");
+		AddRule('F', "F[//F][&&F]");
+		AddRule('F', "F++");
+		AddRule('F', "FF");
+		AddRule('F', "|F");
+		AddRule('F', "F[F//L]");
 		break;
 	}
 	case ELSystemType::WEED:
@@ -97,9 +99,11 @@ FString& ULSystemGenerator::Replace(TCHAR& head, TCHAR pre, TCHAR post)
 		{
 			totalWeight += m_vRules[i]->GetWeight();
 			matches.Add(m_vRules[i]);
-			return seq.Append(m_vRules[i]->getTail());
+			//return seq.Append(m_vRules[i]->getTail());
 		}
 	}
+
+	UE_LOG(LogTemp,Log,TEXT("Rule matches: %d"), matches.Num())
 
 	float rnd = FMath::FRandRange(0, totalWeight);
 	for (int i = 0; i < matches.Num(); i++)

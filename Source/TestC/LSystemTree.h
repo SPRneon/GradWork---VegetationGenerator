@@ -29,10 +29,24 @@ public:
 
 	friend class ULSystemTurtle;
 
+
+
+
+public:
+	struct Leaf
+	{
+		FVector location;
+		FVector orientation;
+	};
+
+	float GetWidth() const;
+	TArray<Leaf*> GetLeaves();
+
 private:
 	//func
 	void FetchLStrings(TArray<FString>& strings);
 	void FetchBranches(TArray<UTree*>& branches);
+
 
 	//Data
 	int level = 0;
@@ -41,10 +55,12 @@ private:
 	FVector m_EndPos;
 	FVector m_EndOri;
 	FString m_LString;
+	float m_Width;
 	bool m_Draw = false;
 	
 
 	UTree* m_Root;
 	TArray<UTree*> m_Branches;
 	TArray<FVector> m_Points;
+	TArray<Leaf*> m_Leaves;
 };

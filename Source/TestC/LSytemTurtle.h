@@ -36,4 +36,5 @@ private:
 	static FString m_LString;
 	static FVector2D m_Angle;
 	static float m_Growth;
+	static float m_Width;
 };

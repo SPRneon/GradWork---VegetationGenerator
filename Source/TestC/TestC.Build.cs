@@ -8,7 +8,17 @@ public class TestC : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Foliage" });
+		PublicDependencyModuleNames.AddRange(
+            new string[] { 
+                "Core", 
+                "CoreUObject", 
+                "Engine", 
+                "InputCore", 
+                "Foliage", 
+                "Slate",
+				"SlateCore",
+                "DetailCustomizations",
+                "EditorStyle" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
@@ -19,5 +29,7 @@ public class TestC : ModuleRules
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
 		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+
+       
 	}
 }

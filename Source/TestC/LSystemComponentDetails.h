@@ -3,13 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/WeakObjectPtr.h"
+#include "Input/Reply.h"
+#include "IDetailCustomization.h"
 
 /**
  * 
  */
-class TESTC_API LSystemComponentDetails
+
+class IDetailLayoutBuilder;
+class ALSystemFoliageSpawner;
+
+
+class TESTC_API FLSystemComponentDetails : public IDetailCustomization
 {
 public:
-	LSystemComponentDetails();
-	~LSystemComponentDetails();
+	virtual ~FLSystemComponentDetails(){};
+
+	/** Makes a new instance of this detail layout class for a specific detail view requesting it */
+	static TSharedRef<IDetailCustomization> MakeInstance();
+
+	/** IDetailCustomization interface */
+	virtual void CustomizeDetails( IDetailLayoutBuilder& DetailBuilder ) override;
+
+	private:
+	FReply OnResimulateClicked();
+	bool IsResimulateEnabled() const;
+	FText GetResimulateTooltipText() const;
+private:
+	TArray< TWeakObjectPtr<class ULSystemFoliageSpawner> > SelectedComponents;
 };
