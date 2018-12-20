@@ -15,7 +15,7 @@
     [
 		{
             "Name" : "VegetationGeneratorEditor",
-            "Type" : "Editor",           
+            "Type" : "Editor"           
         }
     ]
 }

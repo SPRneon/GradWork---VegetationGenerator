@@ -7,6 +7,7 @@
 #include "Misc/Guid.h"
 #include "Components/ActorComponent.h"
 #include "Helpers.h"
+#include "LSystemFoliage.h"
 #include "LSystemComponent.generated.h"
 
 
@@ -109,6 +110,9 @@ class TESTC_API ULSystemComponent : public UActorComponent
 	void SetSpawningVolume(AVolume* InSpawningVolume) { SpawningVolume = InSpawningVolume; }
 	const FGuid& GetProceduralGuid() const { return ProceduralGuid; }
 
+private:
+	/** Does all the actual work of executing the procedural foliage simulation */
+	bool ExecuteSimulation(TArray<ALSystemFoliage*> OutFoliageInstances);
 
 private:
 	UPROPERTY()

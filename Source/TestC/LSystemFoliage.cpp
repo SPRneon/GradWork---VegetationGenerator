@@ -11,7 +11,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Runtime/Foliage/Public/InstancedFoliageActor.h"
-
 #include "EngineUtils.h"
 #include "ConstructorHelpers.h"
 

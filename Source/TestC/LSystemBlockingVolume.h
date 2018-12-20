@@ -1,20 +1,20 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+//Test
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
 #include "GameFramework/Volume.h"
 #include "LSystemBlockingVolume.generated.h"
 
-/**
- * 
- */
+class ALSystemVolume;
+
+/** An invisible volume used to block ProceduralFoliage instances from being spawned. */
 UCLASS()
-class TESTC_API ALSystemBlockingVolume : public AVolume
+class ALSystemBlockingVolume : public AVolume
 {
-	GENERATED_BODY()
-	
-	
-	
-	
+	GENERATED_UCLASS_BODY()
+
+	UPROPERTY(Category = ProceduralFoliage, EditAnywhere)
+	ALSystemVolume* LSystemVolume;
 };
