@@ -15,7 +15,7 @@ class IDetailLayoutBuilder;
 class ALSystemFoliageSpawner;
 
 
-class TESTC_API FLSystemComponentDetails : public IDetailCustomization
+class FLSystemComponentDetails : public IDetailCustomization
 {
 public:
 	virtual ~FLSystemComponentDetails(){};

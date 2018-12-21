@@ -40,7 +40,7 @@ struct FLSTileLayout
 };
 
 UCLASS(BlueprintType)
-class TESTC_API ULSystemComponent : public UActorComponent
+class ULSystemComponent : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
 

@@ -17,7 +17,7 @@ struct FBodyInstance;
  * 
  */
 UCLASS()
-class TESTC_API ULSystemTile : public UObject
+class ULSystemTile : public UObject
 {
 	GENERATED_UCLASS_BODY()
 

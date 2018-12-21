@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class TESTC_API ULSystemSpawnerFactory : public UFactory
+class ULSystemSpawnerFactory : public UFactory
 {
 	GENERATED_UCLASS_BODY()
 	

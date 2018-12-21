@@ -10,7 +10,7 @@
 
 
 UCLASS(BlueprintType)
-class TESTC_API UTree : public UObject
+class UTree : public UObject
 {
 public:
 	GENERATED_BODY()

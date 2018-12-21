@@ -19,7 +19,7 @@ class UProceduralFoliageTile;
 
 /////////////////////////////////////////
 UCLASS(BlueprintType, Blueprintable)
-class TESTC_API ULSystemFoliageSpawner : public UObject
+class ULSystemFoliageSpawner : public UObject
 {
 	GENERATED_UCLASS_BODY()
 

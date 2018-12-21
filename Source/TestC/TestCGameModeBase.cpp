@@ -3,7 +3,7 @@
 #include "TestCGameModeBase.h"
 #include "PropertyEditorModule.h"
 #include "ModuleManager.h"
-#include "LSystemComponentDetails.h"
+//#include "LSystemComponentDetails.h"
 
 
 void ATestCGameModeBase::OnConstruction(const FTransform& Transform)
@@ -11,10 +11,10 @@ void ATestCGameModeBase::OnConstruction(const FTransform& Transform)
 	AGameModeBase::OnConstruction(Transform);
 
 	 //Custom properties
-     FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+     //FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	 //PropertyModule.RegisterCustomPropertyTypeLayout("LSystemFoliageSpawner", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FLSystemComponentDetails::MakeInstance));
-	 PropertyModule.RegisterCustomClassLayout("LSystemComponent", FOnGetDetailCustomizationInstance::CreateStatic(&FLSystemComponentDetails::MakeInstance));
-	 UE_LOG(LogTemp,Log,TEXT("Went in the constructor"));
+	 //PropertyModule.RegisterCustomClassLayout("LSystemComponent", FOnGetDetailCustomizationInstance::CreateStatic(&FLSystemComponentDetails::MakeInstance));
+	 //UE_LOG(LogTemp,Log,TEXT("Went in the constructor"));
 
 
 }

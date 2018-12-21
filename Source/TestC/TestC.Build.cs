@@ -8,6 +8,22 @@ public class TestC : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
+        PublicIncludePaths.AddRange(
+			new string[] {
+				"LindenmayerSystem/Source/LindenmayerSystem/Public/",
+                "TestC/LindenmayerSystem/Source/LindenmayerSystem/Public/"
+				// ... add public include paths required here ...
+			}
+			);
+				
+		
+		PrivateIncludePaths.AddRange(
+			new string[] {
+				"LindenmayerSystem/Source/LindenmayerSystem/Private",
+				// ... add other private include paths required here ...
+			}
+			);
+
 		PublicDependencyModuleNames.AddRange(
             new string[] { 
                 "Core", 
@@ -18,9 +34,16 @@ public class TestC : ModuleRules
                 "Slate",
 				"SlateCore",
                 "DetailCustomizations",
-                "EditorStyle" });
+                "EditorStyle",
+                "GameplayTasks",
+                "UMG"});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] 
+        { 
+           "Foliage",
+           "Slate", 
+           "SlateCore"
+            });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

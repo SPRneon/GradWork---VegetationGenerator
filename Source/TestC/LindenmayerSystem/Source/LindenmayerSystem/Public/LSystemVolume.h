@@ -13,7 +13,7 @@
 class ULSystemComponent;
 
 UCLASS()
-class TESTC_API ALSystemVolume : public AVolume
+class ALSystemVolume : public AVolume
 {
 	GENERATED_UCLASS_BODY()
 

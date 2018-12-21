@@ -10,7 +10,7 @@
 class UFoliageType;
 
 UCLASS()
-class TESTC_API ULindemayerFoliageType : public UObject
+class ULindemayerFoliageType : public UObject
 {
 	GENERATED_BODY()
 	

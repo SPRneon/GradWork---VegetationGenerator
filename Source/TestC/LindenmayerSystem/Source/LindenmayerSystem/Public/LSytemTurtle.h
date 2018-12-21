@@ -16,7 +16,7 @@ class UTree;
  * 
  */
 UCLASS()
-class TESTC_API ULSystemTurtle : public UBlueprintFunctionLibrary
+class ULSystemTurtle : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:

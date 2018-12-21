@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class TESTC_API ULSystemInterpreter : public UBlueprintFunctionLibrary
+class ULSystemInterpreter : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 		UFUNCTION(BlueprintCallable, Category = "Lindenmayer") static TArray<FVector> InterpretLString(FString lString,  FTransform transform);

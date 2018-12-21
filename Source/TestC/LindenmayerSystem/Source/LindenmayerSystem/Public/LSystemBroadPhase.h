@@ -10,7 +10,7 @@
 /**
  * 
  */
-class TESTC_API FLSystemBroadPhase
+class FLSystemBroadPhase
 {
 public:
 	FLSystemBroadPhase(float TileSize = 0.f, float MinimumQuadTreeSize = 100.f);

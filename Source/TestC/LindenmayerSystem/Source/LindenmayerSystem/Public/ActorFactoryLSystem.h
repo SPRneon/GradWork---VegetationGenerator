@@ -12,7 +12,7 @@ class AActor;
 struct FAssetData;
 
 UCLASS()
-class TESTC_API UActorFactoryLSystem : public UActorFactoryBoxVolume
+class UActorFactoryLSystem : public UActorFactoryBoxVolume
 {
 
 	GENERATED_UCLASS_BODY()

@@ -16,7 +16,7 @@
  * 
  */
 UCLASS()
-class TESTC_API ULSystemGenerator : public UBlueprintFunctionLibrary
+class ULSystemGenerator : public UBlueprintFunctionLibrary
 {
 
 	GENERATED_BODY()

@@ -55,7 +55,7 @@ struct FLSystemFoliageOverlap
 };
 
 UCLASS()
-class TESTC_API ALSystemFoliage : public AActor
+class ALSystemFoliage : public AActor
 {
 	GENERATED_BODY()	
 public:	

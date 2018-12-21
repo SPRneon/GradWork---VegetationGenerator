@@ -1,8 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "LSystemSpawnerFactory.h"
+
+#include "LindenmayerSystem/Source/LindenmayerSystem/Public/LSystemSpawnerFactory.h"
 #include "AssetTypeCategories.h"
-#include "LSystemFoliageSpawner.h"
+#include "LindenmayerSystem/Source/LindenmayerSystem/Public/LSystemFoliageSpawner.h"
+
 
 ULSystemSpawnerFactory::ULSystemSpawnerFactory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

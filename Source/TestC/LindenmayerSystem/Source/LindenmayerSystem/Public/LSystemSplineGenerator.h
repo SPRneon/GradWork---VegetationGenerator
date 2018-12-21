@@ -16,7 +16,7 @@ class ALSystemFoliage;
  * 
  */
 UCLASS()
-class TESTC_API ULSystemSplineGenerator : public UBlueprintFunctionLibrary
+class ULSystemSplineGenerator : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
