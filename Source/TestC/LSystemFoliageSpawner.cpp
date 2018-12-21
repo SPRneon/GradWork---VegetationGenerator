@@ -35,12 +35,7 @@ void ULSystemFoliageSpawner::PostEditChangeProperty(FPropertyChangedEvent& Prope
 
 void ULSystemFoliageSpawner::Simulate(int32 NumSteps)
 {
-	/*RandomStream.Initialize(RandomSeed);
-	 FVector Location(0.0f, 0.0f, 0.0f);
-	FRotator Rotation(0.0f, 0.0f, 0.0f);
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Owner = this;
-	GetWorld()->SpawnActor<ALSystemFoliage>(Location,Rotation,SpawnInfo);*/
+
 
 	UE_LOG(LogTemp,Log,TEXT("Simulate in spawner"));
 }

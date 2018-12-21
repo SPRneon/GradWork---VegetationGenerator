@@ -6,7 +6,7 @@
 #include "LSystemComponent.h"
 #include "LSystemFoliageSpawner.h"
 
-
+static FName LSystemVolume_NAME(TEXT("LSystemVolume"));
 
 ALSystemVolume::ALSystemVolume(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)

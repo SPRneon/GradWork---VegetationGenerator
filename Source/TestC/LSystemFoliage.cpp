@@ -31,7 +31,8 @@ ALSystemFoliage::ALSystemFoliage()
 	
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> LeafMeshObj(TEXT("/Game/VegetationGenerator/Leaf.Leaf"));
 	m_LeafMesh = LeafMeshObj.Object;	
-	m_IsAlive = true;	
+	m_IsAlive = true;
+	
 }
 
 void ALSystemFoliage::Initialize(int age, ELSystemType type)
