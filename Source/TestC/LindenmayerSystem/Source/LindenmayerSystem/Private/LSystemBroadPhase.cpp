@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "LSystemBroadPhase.h"
+#include "LindenmayerSystem/Source/LindenmayerSystem/Public/LindemayerFoliageType.h"
 
 
 
@@ -22,7 +23,7 @@ void FLSystemBroadPhase::Empty()
 
 FBox2D GetMaxAABB(ALSystemFoliage* Instance)
 {
-	const float Radius = Instance->GetMaxRadius();
+	const float Radius = Instance->Type->GetMaxRadius();
 	const FVector2D Location(Instance->GetActorLocation());
 	const FVector2D Offset(Radius, Radius);
 	const FBox2D AABB(Location - Offset, Location + Offset);
@@ -42,8 +43,8 @@ bool CircleOverlap(const FVector& ALocation, float ARadius, const FVector& BLoca
 
 bool FLSystemBroadPhase::GetOverlaps(ALSystemFoliage * Instance, TArray<FLSystemFoliageOverlap>& Overlaps) const
 {
-	const float AShadeRadius     = Instance->GetShadeRadius();
-	const float ACollisionRadius = Instance->GetCollisionRadius();
+	const float AShadeRadius     = Instance->Type->ShadeRadius;
+	const float ACollisionRadius = Instance->Type->CollisionRadius;
 
 	TArray<ALSystemFoliage*> PossibleOverlaps;
 	const FBox2D AABB = GetMaxAABB(Instance);
@@ -56,8 +57,8 @@ bool FLSystemBroadPhase::GetOverlaps(ALSystemFoliage * Instance, TArray<FLSystem
 		if (Overlap != Instance)
 		{
 			//We must determine if this is an overlap of shade or an overlap of collision. If both the collision overlap wins
-			bool bCollisionOverlap = CircleOverlap(Instance->GetActorLocation(), ACollisionRadius, Overlap->GetActorLocation(), Overlap->GetCollisionRadius());
-			bool bShadeOverlap     = CircleOverlap(Instance->GetActorLocation(), AShadeRadius, Overlap->GetActorLocation(), Overlap->GetShadeRadius());
+			bool bCollisionOverlap = CircleOverlap(Instance->GetActorLocation(), ACollisionRadius, Overlap->GetActorLocation(), Overlap->Type->CollisionRadius);
+			bool bShadeOverlap     = CircleOverlap(Instance->GetActorLocation(), AShadeRadius, Overlap->GetActorLocation(), Overlap->Type->ShadeRadius);
 
 			if (bCollisionOverlap || bShadeOverlap)
 			{

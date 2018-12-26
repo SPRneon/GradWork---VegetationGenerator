@@ -42,7 +42,8 @@ public class TestC : ModuleRules
         { 
            "Foliage",
            "Slate", 
-           "SlateCore"
+           "SlateCore",
+           "PropertyEditor"
             });
 
 		// Uncomment if you are using Slate UI

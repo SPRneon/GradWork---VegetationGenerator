@@ -31,5 +31,5 @@ public:
 	bool IsResimulateEnabled() const;
 	FText GetResimulateTooltipText() const;
 private:
-	TArray< TWeakObjectPtr<class ULSystemFoliageSpawner> > SelectedComponents;
+	TArray< TWeakObjectPtr<class ULSystemComponent> > SelectedComponents;
 };

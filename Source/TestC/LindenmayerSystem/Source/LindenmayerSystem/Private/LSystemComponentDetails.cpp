@@ -14,6 +14,7 @@
 #include "ScopedTransaction.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
+#include "LSystemComponent.h"
 
 #define LOCTEXT_NAMESPACE "LSystemComponentDetails"
 
@@ -35,7 +36,7 @@ void FLSystemComponentDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
 
 	for (TWeakObjectPtr<UObject>& Object : ObjectsBeingCustomized)
 	{
-		ULSystemFoliageSpawner* Component = Cast<ULSystemFoliageSpawner>(Object.Get());
+		ULSystemComponent* Component = Cast<ULSystemComponent>(Object.Get());
 		if (ensure(Component))
 		{
 			SelectedComponents.Add(Component);
@@ -75,9 +76,35 @@ FReply FLSystemComponentDetails::OnResimulateClicked()
 {
 	UE_LOG(LogTemp,Log,TEXT("Clicked"));
 
-	for(auto& component : SelectedComponents)
+	for (auto& Component : SelectedComponents)
 	{
-		component->Simulate(1);
+		if (Component.IsValid() && Component->LSystemSpawner)
+		{
+			FScopedTransaction Transaction(LOCTEXT("Resimulate_Transaction", "LSystem Foliage Simulation"));
+			TArray <ALSystemFoliage> DesiredFoliageInstances;
+			if (Component->GenerateProceduralContent(DesiredFoliageInstances))
+			{
+				/*FFoliagePaintingGeometryFilter OverrideGeometryFilter;
+				OverrideGeometryFilter.bAllowLandscape = Component->bAllowLandscape;
+				OverrideGeometryFilter.bAllowStaticMesh = Component->bAllowStaticMesh;
+				OverrideGeometryFilter.bAllowBSP = Component->bAllowBSP;
+				OverrideGeometryFilter.bAllowFoliage = Component->bAllowFoliage;
+				OverrideGeometryFilter.bAllowTranslucent = Component->bAllowTranslucent;
+
+				FEdModeFoliage::AddInstances(Component->GetWorld(), DesiredFoliageInstances, OverrideGeometryFilter);*/
+
+				// If no instances were spawned, inform the user
+				if (!Component->HasSpawnedAnyInstances())
+				{
+					FNotificationInfo Info(LOCTEXT("NothingSpawned_Notification", "Unable to spawn instances. Ensure a large enough surface exists within the volume."));
+					Info.bUseLargeFont = false;
+					Info.bFireAndForget = true;
+					Info.bUseThrobber = false;
+					Info.bUseSuccessFailIcons = true;
+					FSlateNotificationManager::Get().AddNotification(Info);
+				}
+			}
+		}
 	}
 	return FReply::Handled();
 }

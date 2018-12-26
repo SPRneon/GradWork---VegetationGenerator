@@ -5,7 +5,6 @@
 #include "AssetTypeCategories.h"
 #include "LindenmayerSystem/Source/LindenmayerSystem/Public/LSystemFoliageSpawner.h"
 
-
 ULSystemSpawnerFactory::ULSystemSpawnerFactory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {

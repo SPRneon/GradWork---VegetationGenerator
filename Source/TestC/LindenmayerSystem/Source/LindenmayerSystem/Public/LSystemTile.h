@@ -25,7 +25,7 @@ class ULSystemTile : public UObject
 	void Simulate(const ULSystemFoliageSpawner* InFoliageSpawner, const int32 RandomSeed, const int32 MaxNumSteps, const int32 InLastCancel);
 
 	//Gets info of all isntances
-	//void ExtractDesiredInstances(TArray<ALSystemFoliage>& OutDesiredInstances, const FTransform& WorldTM, const FGuid& ProceduralGuid, const float HalfHeight, const FBodyInstance* VolumeBodyInstance, bool bEmptyTileInfo = true);
+	void ExtractDesiredInstances(TArray<ALSystemFoliage>& OutDesiredInstances, const FTransform& WorldTM, const FGuid& ProceduralGuid, const float HalfHeight, const FBodyInstance* VolumeBodyInstance, bool bEmptyTileInfo = true);
 
 	//Copies instances of this tile to another
 	void CopyInstancesToTile(ULSystemTile* ToTile, const FBox2D& LocalAABB, const FTransform& RelativeTM, const float Overlap) const;
@@ -87,7 +87,7 @@ private:
 	bool HandleOverlaps(ALSystemFoliage* Instance);
 
 	/** Attempts to create a new instance and resolves any overlaps. Returns the new instance if successful for calling code to add to Instances */
-	ALSystemFoliage* NewSeed(const FVector& Location, FVector Size, ELSystemType Type, int InAge, bool bBlocker = false);
+	ALSystemFoliage* NewSeed(const FVector& Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker = false);
 
 	void SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds);
 	void AgeSeeds();
@@ -120,5 +120,5 @@ private:
 private:
 	float GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep);
 	float GetRandomGaussian();
-	FVector GetSeedOffset(const ALSystemFoliage* Inst, float MinDistance);
+	FVector GetSeedOffset(const ULSystemFoliageType* Type, float MinDistance);
 };

@@ -83,11 +83,12 @@ class ULSystemComponent : public UActorComponent
 	// UObject interface
 	virtual void PostEditImport() override;
 
+	//TODO: Incorporate ALSYstemFoliage in ULEVEL
 		/** 
 	 * Runs the procedural foliage simulation to generate a list of desired instances to spawn.
 	 * @return True if the simulation succeeded
 	 */
-	bool GenerateProceduralContent(TArray<ELSystemType>& OutLSystemTypes);
+	bool GenerateProceduralContent(TArray<ALSystemFoliage>& OutLSystemTypes);
 	
 	/** Removes all spawned foliage instances in the level that were spawned by this component */
 	void RemoveProceduralContent();
@@ -112,7 +113,7 @@ class ULSystemComponent : public UActorComponent
 
 private:
 	/** Does all the actual work of executing the procedural foliage simulation */
-	bool ExecuteSimulation(TArray<ALSystemFoliage*> OutFoliageInstances);
+	bool ExecuteSimulation(TArray<ALSystemFoliage>& OutFoliageInstances);
 
 private:
 	UPROPERTY()

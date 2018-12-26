@@ -19,11 +19,7 @@ ULSystemFoliageSpawner::ULSystemFoliageSpawner(const FObjectInitializer& ObjectI
 	RandomSeed = 42;
 
 
-	 ////Custom properties
-  //   FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-	 ////PropertyModule.RegisterCustomPropertyTypeLayout("LSystemFoliageSpawner", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FLSystemComponentDetails::MakeInstance));
-	 //PropertyModule.RegisterCustomClassLayout("LSystemFoliageSpawner", FOnGetDetailCustomizationInstance::CreateStatic(&FLSystemComponentDetails::MakeInstance));
-	 //UE_LOG(LogTemp,Log,TEXT("Went in the constructor"));
+
 }
 
 #if WITH_EDITOR

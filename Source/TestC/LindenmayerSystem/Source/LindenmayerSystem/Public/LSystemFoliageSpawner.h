@@ -11,6 +11,7 @@
 #include "Math/RandomStream.h"
 #include "Helpers.h"
 #include "LSystemFoliage.h"
+#include "LindemayerFoliageType.h"
 #include "LSystemFoliageSpawner.generated.h"
 
 
@@ -44,7 +45,7 @@ public:
 
 private:
 	UPROPERTY(Category = Lindenmayer, EditAnywhere)
-	TArray<ALSystemFoliage*> m_LSystemTypes;
+	TArray<ULSystemFoliageType*> m_LSystemTypes;
 
 	UPROPERTY()
 	bool bNeedsSimulation;
@@ -56,7 +57,7 @@ public:
 
 	int32 GetRandomNumber();
 
-	const TArray<ALSystemFoliage*>& GetFoliageTypes() const { return m_LSystemTypes; }
+	const TArray<ULSystemFoliageType*> GetFoliageTypes() const { return m_LSystemTypes; }
 
 	//void GetInstancesToSpawn(TArray<FProceduralFoliageInstance>& OutInstances, const FVector& Min = FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX), const FVector& Max = FVector(FLT_MAX, FLT_MAX, FLT_MAX) ) const;
 
@@ -70,10 +71,10 @@ public:
 	void SimulateIfNeeded();
 
 	/** Takes a tile index and returns a random tile associated with that index. */
-	const UProceduralFoliageTile* GetRandomTile(int32 X, int32 Y);
+	const ULSystemTile* GetRandomTile(int32 X, int32 Y);
 
 	/** Creates a temporary empty tile with the appropriate settings created for it. */
-	UProceduralFoliageTile* CreateTempTile();
+	ULSystemTile* CreateTempTile();
 private:
 	private:
 	void CreateProceduralFoliageInstances();

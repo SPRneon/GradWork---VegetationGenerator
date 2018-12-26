@@ -2,6 +2,7 @@
 
 #include "LSystemTile.h"
 #include "LSystemFoliage.h"
+#include "LindemayerFoliageType.h"
 #include "Engine/World.h"
 #include "LSystemFoliageSpawner.h"
 
@@ -60,7 +61,7 @@ bool ULSystemTile::HandleOverlaps(ALSystemFoliage* Instance)
 	return bSurvived;
 }
 
-ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size, ELSystemType Type, int InAge, bool bBlocker)
+ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker)
 {
 	const FVector InitRadius = 100.f * Size; //TODO get maxradius instead of 100.f
 	{
@@ -79,7 +80,7 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size, 
 		FActorSpawnParameters SpawnParams;		
 		ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(Location, Rotation,SpawnParams);
 		NewInst->m_Generation = InAge;
-		NewInst->m_Type = Type;
+		NewInst->Type = Type;
 		NewInst->GetTransform().SetScale3D(Size);
 		NewInst->bBlocker = bBlocker;
 		//NewInst->Initialize()????
@@ -96,9 +97,9 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size, 
 
 float ULSystemTile::GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep)
 {
-	const ALSystemFoliage* Type = Instance;
-	const int32 StepsLeft = Instance->MaxAge - SimulationStep;
-	const float InstanceMaxAge = Type->GetNextAge(Instance->m_Generation, StepsLeft);
+	const ULSystemFoliageType* Type = Instance->Type;
+	const int32 StepsLeft = Type->MaxAge - SimulationStep;
+	const float InstanceMaxAge = Type->GetNextAge(Instance->GetGen(), StepsLeft);
 	const float NewInstanceMaxAge = Type->GetNextAge(NewInstanceAge, StepsLeft);
 
 	const float InstanceMaxScale = Type->GetScaleForAge(InstanceMaxAge);
@@ -120,14 +121,14 @@ float ULSystemTile::GetRandomGaussian()
 	return Z1;
 }
 
-FVector ULSystemTile::GetSeedOffset(const ALSystemFoliage* Inst, float MinDistance)
+FVector ULSystemTile::GetSeedOffset(const ULSystemFoliageType* Type, float MinDistance)
 {
 	//We want 10% of seeds to be the max distance so we use a z score of +- 1.64
 	const float MaxZScore = 1.64f;
 	const float Z1 = GetRandomGaussian();
 	const float Z1Clamped = FMath::Clamp(Z1, -MaxZScore, MaxZScore);
-	const float VariationDistance = Z1Clamped * Inst->GetSpreadVariance() / MaxZScore;
-	const float AverageDistance = MinDistance + Inst->GetAvSpreadVariance();
+	const float VariationDistance = Z1Clamped * Type->SpreadVariance / MaxZScore;
+	const float AverageDistance = MinDistance + Type->AverageSpreadDistance;
 	
 	const float RandRad = FMath::Max<float>(RandomStream.FRand(), SMALL_NUMBER) * PI * 2.f;
 	const FVector Dir = FVector(FMath::Cos(RandRad), FMath::Sin(RandRad), 0);
@@ -143,8 +144,28 @@ void ULSystemTile::AgeSeeds()
 		if (UserCancelled()){ return; }
 		if (Instance->IsAlive())
 		{
-			Instance->AgeFoliage(Instance->GetGen() + 1);
+			const ULSystemFoliageType* Type = Instance->Type;
+			if (SimulationStep <= Type->NumSteps && Type->GetSpawnsInShade() == bSimulateOnlyInShade)
+			{
+				const float CurrentAge = Instance->GetGen();
+				const float NewAge = Type->GetNextAge(Instance->GetGen(), 1);
+				const float NewScale = Type->GetScaleForAge(NewAge);
+
+				const FVector Location = Instance->GetActorLocation();
+
+				// Replace the current instance with the newly aged version
+				MarkPendingRemoval(Instance);
+				if (ALSystemFoliage* Inst = NewSeed(Location, FVector(NewScale), Type, NewAge))
+				{
+					NewSeeds.Add(Inst);
+				}
+			}
 		}
+	}
+
+	for (ALSystemFoliage* Seed : NewSeeds)
+	{
+		InstancesSet.Add(Seed);
 	}
 
 
@@ -168,20 +189,20 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 
 		
 
-		if (SimulationStep <= Inst->NumSteps  && Inst->bSpawnsInShade == bSimulateOnlyInShade)
+		if (SimulationStep <= Inst->Type->NumSteps  && Inst->Type->bSpawnsInShade == bSimulateOnlyInShade)
 		{
-			for (int32 i = 0; i < Inst->SeedsPerStep; ++i)
+			for (int32 i = 0; i < Inst->Type->SeedsPerStep; ++i)
 			{
 				//spread new seeds
-				const float NewAge = Inst->GetInitAge(RandomStream);
-				const float NewScale = Inst->GetScaleForAge(NewAge);
+				const float NewAge = Inst->Type->GetInitAge(RandomStream);
+				const float NewScale = Inst->Type->GetScaleForAge(NewAge);
 				const float MinDistanceToClear = GetSeedMinDistance(Inst, NewAge, SimulationStep);
-				const FVector GlobalOffset = GetSeedOffset(Inst, MinDistanceToClear);
+				const FVector GlobalOffset = GetSeedOffset(Inst->Type, MinDistanceToClear);
 				
 				if (GlobalOffset.SizeSquared2D() + SMALL_NUMBER > MinDistanceToClear*MinDistanceToClear)
 				{
 					const FVector NewLocation = GlobalOffset + Inst->GetActorLocation();
-					if (ALSystemFoliage* NewInstance = NewSeed(NewLocation, FVector(NewScale), Inst->m_Type, NewAge))
+					if (ALSystemFoliage* NewInstance = NewSeed(NewLocation, FVector(NewScale), Inst->Type, NewAge))
 					{
 						NewSeeds.Add(NewInstance);
 					}
@@ -195,16 +216,25 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 
 void ULSystemTile::MarkPendingRemoval(ALSystemFoliage* ToRemove)
 {
-		if(ToRemove->IsAlive())
-		{
+	if(ToRemove->IsAlive())
+	{
 		Broadphase.Remove(ToRemove);
 		ToRemove->TerminateInstance();
 		PendingRemovals.Add(ToRemove);
-		}
+	}
+
+
 }
 
 void ULSystemTile::FlushPendingRemovals()
 {
+
+	for (ALSystemFoliage* ToRemove : PendingRemovals)
+	{
+		RemoveInstance(ToRemove);
+	}
+
+	PendingRemovals.Empty();
 }
 
 bool ULSystemTile::UserCancelled() const
@@ -340,7 +370,7 @@ void ULSystemTile::AddInstances(const TArray<ALSystemFoliage*>& NewInstances, co
 											|| Location.Y - Size.Y > InnerLocalAABB.Max.Y;
 
 		const FVector NewLocation = ToLocalTM.TransformPosition(Inst->GetActorLocation());
-		if (ALSystemFoliage* NewInst = NewSeed(NewLocation, Size, Inst->GetType(), Inst->GetGen(), bIsOutsideInnerLocalAABB))
+		if (ALSystemFoliage* NewInst = NewSeed(NewLocation, Size, Inst->Type, Inst->GetGen(), bIsOutsideInnerLocalAABB))
 		{			
 			InstancesSet.Add(NewInst);
 		}
@@ -371,12 +401,12 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 
 	TMap<int32,float> MaxShadeRadii;
 	TMap<int32, float> MaxCollisionRadii;
-	TMap<const ALSystemFoliage*, int32> SeedsLeftMap;
-	TMap<const ALSystemFoliage*, FRandomStream> RandomStreamPerType;
+	TMap<const ULSystemFoliageType*, int32> SeedsLeftMap;
+	TMap<const ULSystemFoliageType*, FRandomStream> RandomStreamPerType;
 
-	TArray<const ALSystemFoliage*> TypesToSeed;
+	TArray<const ULSystemFoliageType*> TypesToSeed;
 
-	for (const ALSystemFoliage* TypeInstance : FoliageSpawner->GetFoliageTypes())
+	for (const ULSystemFoliageType* TypeInstance : FoliageSpawner->GetFoliageTypes())
 	{
 		if (UserCancelled()){ return; }
 		//const UFoliageType_InstancedStaticMesh* TypeInstance = FoliageTypeObject.GetInstance();
@@ -431,7 +461,7 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 		if (UserCancelled()){ return; }
 		TypeIdx = (TypeIdx + 1) % NumTypes;	//keep cycling through the types that we spawn initial seeds for to make sure everyone gets fair chance
 
-		if (const ALSystemFoliage* Type = TypesToSeed[TypeIdx])
+		if (const ULSystemFoliageType* Type = TypesToSeed[TypeIdx])
 		{
 			int32& SeedsLeft = SeedsLeftMap.FindChecked(Type);
 			if (SeedsLeft == 0)
@@ -453,7 +483,7 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 				const ALSystemFoliage* Spawner = InstancesArray[InstanceSpawnerIdx];
 				InitX = Spawner->GetActorLocation().X;
 				InitY = Spawner->GetActorLocation().Y;
-				NeededRadius = Spawner->GetCollisionRadius() * (Scale + Spawner->GetScaleForAge(Spawner->m_Generation));
+				NeededRadius = Spawner->Type->CollisionRadius * (Scale + Spawner->Type->GetScaleForAge(Spawner->m_Generation));
 			}
 			else
 			{
@@ -470,7 +500,7 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 			const float X = InitX + GlobalOffset.X;
 			const float Y = InitY + GlobalOffset.Y;
 
-			if (ALSystemFoliage* NewInst = NewSeed(FVector(X, Y, 0.f), FVector(Scale), Type->GetType(), NewAge))
+			if (ALSystemFoliage* NewInst = NewSeed(FVector(X, Y, 0.f), FVector(Scale), Type, NewAge))
 			{
 				OutInstances.Add(NewInst);
 			}
