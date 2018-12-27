@@ -8,6 +8,7 @@
 #include "LSystemFoliage.h"
 #include "Math/RandomStream.h"
 #include "LSystemBroadPhase.h"
+#include "InstancedLSystemFoliage.h"
 #include "LSystemTile.generated.h"
 
 
@@ -25,7 +26,7 @@ class ULSystemTile : public UObject
 	void Simulate(const ULSystemFoliageSpawner* InFoliageSpawner, const int32 RandomSeed, const int32 MaxNumSteps, const int32 InLastCancel);
 
 	//Gets info of all isntances
-	void ExtractDesiredInstances(TArray<ALSystemFoliage>& OutDesiredInstances, const FTransform& WorldTM, const FGuid& ProceduralGuid, const float HalfHeight, const FBodyInstance* VolumeBodyInstance, bool bEmptyTileInfo = true);
+	void ExtractDesiredInstances(TArray<FDesiredFoliageInstance>& OutDesiredInstances, const FTransform& WorldTM, const FGuid& ProceduralGuid, const float HalfHeight, const FBodyInstance* VolumeBodyInstance, bool bEmptyTileInfo = true);
 
 	//Copies instances of this tile to another
 	void CopyInstancesToTile(ULSystemTile* ToTile, const FBox2D& LocalAABB, const FTransform& RelativeTM, const float Overlap) const;

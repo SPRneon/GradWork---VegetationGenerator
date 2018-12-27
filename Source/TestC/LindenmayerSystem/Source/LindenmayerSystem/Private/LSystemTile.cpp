@@ -5,6 +5,9 @@
 #include "LindemayerFoliageType.h"
 #include "Engine/World.h"
 #include "LSystemFoliageSpawner.h"
+#include "LindemayerFoliageType.h"
+#include "InstancedLSystemFoliage.h"
+
 
 
 
@@ -253,10 +256,36 @@ void ULSystemTile::Simulate(const ULSystemFoliageSpawner * InFoliageSpawner, con
 	RunSimulation(MaxNumSteps, true);
 }
 
-//void ULSystemTile::ExtractDesiredInstances(TArray<ALSystemFoliage>& OutDesiredInstances, const FTransform & WorldTM, const FGuid & ProceduralGuid, const float HalfHeight, const FBodyInstance * VolumeBodyInstance, bool bEmptyTileInfo)
-//{
-//	
-//}
+void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredFoliageInstance>& OutDesiredInstances, const FTransform & WorldTM, const FGuid & ProceduralGuid, const float HalfHeight, const FBodyInstance * VolumeBodyInstance, bool bEmptyTileInfo)
+{
+
+	const FCollisionQueryParams Params(NAME_None, FCollisionQueryParams::GetUnknownStatId(), true);
+	FHitResult Hit;
+
+	OutDesiredInstances.Reserve(InstancesSet.Num());
+	for (auto Instance : InstancesArray)
+	{
+		auto type = Instance->Type;
+		FVector StartRay = Instance->GetActorLocation() + WorldTM.GetLocation();
+		StartRay.Z += HalfHeight;
+		FVector EndRay = StartRay;
+		EndRay.Z -= (HalfHeight*2.f + 10.f);	//add 10cm to bottom position of raycast. This is needed because volume is usually placed directly on geometry and then you get precision issues
+
+		FDesiredFoliageInstance* DesiredInst = new (OutDesiredInstances)FDesiredFoliageInstance(StartRay, EndRay, type->GetMaxRadius());
+		DesiredInst->Rotation = FQuat( Instance->GetActorRotation());
+		DesiredInst->ProceduralGuid = ProceduralGuid;
+		DesiredInst->FoliageType = type;
+		DesiredInst->Age = Instance->GetGen();
+		DesiredInst->ProceduralVolumeBodyInstance = VolumeBodyInstance;
+		DesiredInst->PlacementMode = EFoliagePlacementMode::Procedural;
+	}
+
+	if (bEmptyTileInfo)
+	{
+		Empty();
+	}
+}
+
 
 void ULSystemTile::CopyInstancesToTile(ULSystemTile * ToTile, const FBox2D & LocalAABB, const FTransform & RelativeTM, const float Overlap) const
 {
@@ -303,7 +332,7 @@ void ULSystemTile::InitSimulation(const ULSystemFoliageSpawner * InFoliageSpawne
 	RandomStream.Initialize(RandomSeed);
 	FoliageSpawner = InFoliageSpawner;
 	SimulationStep = 0;
-	//Broadphase = FLSystemBroadPhase(FoliageSpawner->TileSize, FoliageSpawner->MinimumQuadTreeSize);
+	Broadphase = FLSystemBroadPhase(FoliageSpawner->TileSize, FoliageSpawner->MinimumQuadTreeSize);
 }
 
 void ULSystemTile::GetResourceSizeEx(FResourceSizeEx & CumulativeResourceSize)
@@ -381,18 +410,87 @@ void ULSystemTile::AddInstances(const TArray<ALSystemFoliage*>& NewInstances, co
 
 void ULSystemTile::InstancesToArray()
 {
+	InstancesArray.Empty(InstancesSet.Num());
+	for (ALSystemFoliage* FromInst : InstancesSet)
+	{
+		// Blockers do not get instantiated so don't bother putting it into array
+		if (FromInst->bBlocker == false)
+		{
+			
+			auto LSA = ALSystemFoliage::StaticClass()->GetDefaultObject<ALSystemFoliage>();
+			LSA = FromInst;
+			//new(InstancesArray)ALSystemFoliage(*FromInst);
+			InstancesArray.Push(LSA);
+			
+		}
+	}
 }
 
 void ULSystemTile::Empty()
 {
+	Broadphase.Empty();
+	InstancesArray.Empty();
+	
+	for (ALSystemFoliage* Inst : InstancesSet)
+	{
+		delete Inst;
+	}
+
+	InstancesSet.Empty();
+	PendingRemovals.Empty();
 }
 
 void ULSystemTile::RunSimulation(const int32 MaxNumSteps, bool bOnlyInShade)
 {
+	int32 MaxSteps = 0;
+
+	for (const ULSystemFoliageType* FoliageTypeObject : FoliageSpawner->GetFoliageTypes())
+	{
+		
+		if(FoliageTypeObject->GetSpawnsInShade() == bOnlyInShade)
+		{
+			MaxSteps = FMath::Max(MaxSteps, FoliageTypeObject->NumSteps);
+
+		}
+	}
+
+	if (MaxNumSteps >= 0)
+	{
+		MaxSteps = FMath::Min(MaxSteps, MaxNumSteps);	//only take as many steps as given
+	}
+
+	SimulationStep = 0;
+	bSimulateOnlyInShade = bOnlyInShade;
+	for (int32 Step = 0; Step < MaxSteps; ++Step)
+	{
+		StepSimulation();
+		++SimulationStep;
+	}
+
+	InstancesToArray();
 }
 
 void ULSystemTile::StepSimulation()
 {
+	if (UserCancelled()){ return; }
+	TArray<ALSystemFoliage*> NewInstances;
+	if (SimulationStep == 0)
+	{
+		AddRandomSeeds(NewInstances);
+	}
+	else
+	{
+		AgeSeeds();
+		SpreadSeeds(NewInstances);
+	}
+
+	for (ALSystemFoliage* Inst : NewInstances)
+	{
+		InstancesSet.Add(Inst);
+	}
+
+	FlushPendingRemovals();
+
 }
 
 void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)

@@ -8,6 +8,7 @@
 #include "Components/ActorComponent.h"
 #include "Helpers.h"
 #include "LSystemFoliage.h"
+#include "InstancedLSystemFoliage.h"
 #include "LSystemComponent.generated.h"
 
 
@@ -88,7 +89,7 @@ class ULSystemComponent : public UActorComponent
 	 * Runs the procedural foliage simulation to generate a list of desired instances to spawn.
 	 * @return True if the simulation succeeded
 	 */
-	bool GenerateProceduralContent(TArray<ALSystemFoliage>& OutLSystemTypes);
+	bool GenerateProceduralContent(TArray<FDesiredFoliageInstance>& OutLSystemTypes);
 	
 	/** Removes all spawned foliage instances in the level that were spawned by this component */
 	void RemoveProceduralContent();
@@ -113,7 +114,7 @@ class ULSystemComponent : public UActorComponent
 
 private:
 	/** Does all the actual work of executing the procedural foliage simulation */
-	bool ExecuteSimulation(TArray<ALSystemFoliage>& OutFoliageInstances);
+	bool ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFoliageInstances);
 
 private:
 	UPROPERTY()

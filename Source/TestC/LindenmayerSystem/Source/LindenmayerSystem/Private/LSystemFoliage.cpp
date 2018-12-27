@@ -14,7 +14,7 @@
 #include "EngineUtils.h"
 #include "ConstructorHelpers.h"
 #include "LindenmayerSystem/Source/LindenmayerSystem/Public/LindemayerFoliageType.h"
-#include "..\Public\LSystemFoliage.h"
+
 
 // Sets default values
 ALSystemFoliage::ALSystemFoliage()

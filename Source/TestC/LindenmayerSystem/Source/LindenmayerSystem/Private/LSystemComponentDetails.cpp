@@ -81,7 +81,7 @@ FReply FLSystemComponentDetails::OnResimulateClicked()
 		if (Component.IsValid() && Component->LSystemSpawner)
 		{
 			FScopedTransaction Transaction(LOCTEXT("Resimulate_Transaction", "LSystem Foliage Simulation"));
-			TArray <ALSystemFoliage> DesiredFoliageInstances;
+			TArray <FDesiredFoliageInstance> DesiredFoliageInstances;
 			if (Component->GenerateProceduralContent(DesiredFoliageInstances))
 			{
 				/*FFoliagePaintingGeometryFilter OverrideGeometryFilter;

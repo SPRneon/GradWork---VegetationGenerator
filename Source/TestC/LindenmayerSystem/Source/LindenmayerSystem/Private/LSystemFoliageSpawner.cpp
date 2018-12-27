@@ -43,4 +43,18 @@ void ULSystemFoliageSpawner::Serialize(FArchive& Ar)
 	//Ar.UsingCustomVersion(FProceduralFoliageCustomVersion::GUID);
 }
 
+void ULSystemFoliageSpawner::SimulateIfNeeded()
+{
+}
+
+const ULSystemTile * ULSystemFoliageSpawner::GetRandomTile(int32 X, int32 Y)
+{
+	return nullptr;
+}
+
+ULSystemTile * ULSystemFoliageSpawner::CreateTempTile()
+{
+	return nullptr;
+}
+
 #undef LOCTEXT_NAMESPACE

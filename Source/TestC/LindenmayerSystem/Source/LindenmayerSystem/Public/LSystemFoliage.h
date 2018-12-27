@@ -59,6 +59,7 @@ struct FLSystemFoliageOverlap
 UCLASS()
 class ALSystemFoliage : public AActor
 {
+public:
 	GENERATED_BODY()	
 public:	
 	// Sets default values for this actor's properties
@@ -67,6 +68,7 @@ public:
 	
 
 	friend class ULSystemTile;
+
 
 	void Initialize(int age, ELSystemType type);
 	TArray<USplineComponent*>& GetSplineComponentArray();
@@ -85,7 +87,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+public:
+	
 
+
+public:
 	//Components
 	UPROPERTY()
 	USceneComponent* Root = nullptr;
@@ -123,7 +129,7 @@ public:
 
 	bool bBlocker;
 
-
+public:
 	//Check which foliage is dominating the other
 	static ALSystemFoliage* Domination(ALSystemFoliage* A, ALSystemFoliage* B, ESimulationOverlap::Type OverlapType);
 
