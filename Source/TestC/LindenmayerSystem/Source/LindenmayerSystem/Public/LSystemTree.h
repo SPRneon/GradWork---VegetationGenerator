@@ -41,6 +41,7 @@ public:
 
 	float GetWidth() const;
 	TArray<Leaf*> GetLeaves();
+	UTree* GetRoot() const { return m_Root;}
 
 private:
 	//func

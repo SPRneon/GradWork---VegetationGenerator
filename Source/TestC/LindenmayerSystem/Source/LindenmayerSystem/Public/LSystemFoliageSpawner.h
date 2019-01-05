@@ -15,7 +15,8 @@
 #include "LSystemFoliageSpawner.generated.h"
 
 
-class UProceduralFoliageTile;
+class ULSystemTile;
+class ALSystemFoliage;
 
 
 /////////////////////////////////////////
@@ -46,6 +47,9 @@ public:
 private:
 	UPROPERTY(Category = Lindenmayer, EditAnywhere)
 	TArray<ULSystemFoliageType*> m_LSystemTypes;
+
+	UPROPERTY(Category = Lindenmayer, EditAnywhere)
+	TArray<ALSystemFoliage*> LSystemInstances;
 
 	UPROPERTY()
 	bool bNeedsSimulation;
@@ -84,7 +88,7 @@ private:
 	void SetClean();
 
 private:
-	TArray<TWeakObjectPtr<UProceduralFoliageTile>> PrecomputedTiles;
+	TArray<TWeakObjectPtr<ULSystemTile>> PrecomputedTiles;
 
 	FRandomStream RandomStream;
 

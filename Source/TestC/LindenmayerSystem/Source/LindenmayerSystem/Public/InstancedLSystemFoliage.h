@@ -10,10 +10,10 @@ class UPrimitiveComponent;
 
 enum ELSysFoliageInstanceFlags
 {
-	FOLIAGE_AlignToNormal = 0x00000001,
-	FOLIAGE_NoRandomYaw = 0x00000002,
-	FOLIAGE_Readjusted = 0x00000004,
-	FOLIAGE_InstanceDeleted = 0x00000008,	// Used only for migration from pre-HierarchicalISM foliage.
+	LSYS_AlignToNormal = 0x00000001,
+	LSYS_NoRandomYaw = 0x00000002,
+	LSYS_Readjusted = 0x00000004,
+	LSYS_InstanceDeleted = 0x00000008,	// Used only for migration from pre-HierarchicalISM foliage.
 };
 
 struct FLSysFoliageInstancePlacementInfo
@@ -62,7 +62,7 @@ struct FLSysFoliageInstance : public FLSysFoliageInstancePlacementInfo
 
 	void AlignToNormal(const FVector& InNormal, float AlignMaxAngle = 0.f)
 	{
-		Flags |= FOLIAGE_AlignToNormal;
+		Flags |= LSYS_AlignToNormal;
 
 		FRotator AlignRotation = InNormal.Rotation();
 		// Static meshes are authored along the vertical axis rather than the X axis, so we add 90 degrees to the static mesh's Pitch.
@@ -186,7 +186,7 @@ public:
 };
 #endif
 
-namespace EFoliagePlacementMode
+namespace ELSysPlacementMode
 {
 	enum Type
 	{
@@ -196,28 +196,28 @@ namespace EFoliagePlacementMode
 
 }
 
-struct FDesiredFoliageInstance
+struct FDesiredLSysInstance
 {
-	FDesiredFoliageInstance()
+	FDesiredLSysInstance()
 		: FoliageType(nullptr)
 		, StartTrace(ForceInit)
 		, EndTrace(ForceInit)
 		, Rotation(ForceInit)
 		, TraceRadius(0.f)
 		, Age(0.f)
-		, PlacementMode(EFoliagePlacementMode::Manual)
+		, PlacementMode(ELSysPlacementMode::Manual)
 	{
 
 	}
 
-	FDesiredFoliageInstance(const FVector& InStartTrace, const FVector& InEndTrace, const float InTraceRadius = 0.f)
+	FDesiredLSysInstance(const FVector& InStartTrace, const FVector& InEndTrace, const float InTraceRadius = 0.f)
 		: FoliageType(nullptr)
 		, StartTrace(InStartTrace)
 		, EndTrace(InEndTrace)
 		, Rotation(ForceInit)
 		, TraceRadius(InTraceRadius)
 		, Age(0.f)
-		, PlacementMode(EFoliagePlacementMode::Manual)
+		, PlacementMode(ELSysPlacementMode::Manual)
 	{
 	}
 
@@ -229,7 +229,7 @@ struct FDesiredFoliageInstance
 	float TraceRadius;
 	float Age;
 	const struct FBodyInstance* ProceduralVolumeBodyInstance;
-	EFoliagePlacementMode::Type PlacementMode;
+	ELSysPlacementMode::Type PlacementMode;
 };
 
 
@@ -241,9 +241,9 @@ struct FOLIAGE_API FLSysPotentialInstance
 	FVector HitNormal;
 	UPrimitiveComponent* HitComponent;
 	float HitWeight;
-	FDesiredFoliageInstance DesiredInstance;
+	FDesiredLSysInstance DesiredInstance;
 
-	FLSysPotentialInstance(FVector InHitLocation, FVector InHitNormal, UPrimitiveComponent* InHitComponent, float InHitWeight, const FDesiredFoliageInstance& InDesiredInstance = FDesiredFoliageInstance());
+	FLSysPotentialInstance(FVector InHitLocation, FVector InHitNormal, UPrimitiveComponent* InHitComponent, float InHitWeight, const FDesiredLSysInstance& InDesiredInstance = FDesiredLSysInstance());
 	bool PlaceInstance(const UWorld* InWorld, const ULSystemFoliageType* Settings, FLSysFoliageInstance& Inst, bool bSkipCollision = false);
 };
 #endif

@@ -14,12 +14,15 @@
 #include "LSystemFoliage.generated.h"
 
 
+struct FDesiredLSysInstance;
+struct FLSysFoliageInstance;
 class ULSystemTurtle;
 class UTree;
 class ULSystemGenerator;
 class ALSystemFoliage;
+class UInstancedStaticMeshComponent;
 
-
+typedef TFunction<bool(const UPrimitiveComponent*)> FLSysTraceFilterFunc;
 
 #if WITH_PHYSX
 namespace physx
@@ -111,13 +114,13 @@ public:
 
 	//Data
 	UPROPERTY(EditAnywhere)
-	int m_Generation = 1;
+	int m_Generation = 4;
 	UPROPERTY(VisibleAnywhere)
 	ELSystemType m_Type = ELSystemType::PLANT;
 	UPROPERTY(VisibleAnywhere)
 	FString m_LString = "";
 
-
+	
 	
 
 	/**Spline component*/
@@ -126,10 +129,21 @@ public:
 	/**SplineMesh component*/
      UPROPERTY(EditAnywhere, Category = Lindenmayer)
      TArray<USplineMeshComponent*> m_SplineMeshComponents;
+	/**Spline component*/
+     UPROPERTY(EditAnywhere, Category = Lindenmayer)
+     UInstancedStaticMeshComponent* m_LeafMeshComponents;
 
 	bool bBlocker;
 
 public:
+#if WITH_EDITOR
+	static bool FoliageTrace(const UWorld* InWorld, FHitResult& OutHit, const FDesiredLSysInstance& DesiredInstance, FName InTraceTag = NAME_None, bool InbReturnFaceIndex = false, const FLSysTraceFilterFunc& FilterFunc = FLSysTraceFilterFunc());
+	static bool CheckCollisionWithWorld(const UWorld* InWorld, const UFoliageType* Settings, const FLSysFoliageInstance& Inst, const FVector& HitNormal, const FVector& HitLocation, UPrimitiveComponent* HitComponent);
+
+#endif
+
+
+
 	//Check which foliage is dominating the other
 	static ALSystemFoliage* Domination(ALSystemFoliage* A, ALSystemFoliage* B, ESimulationOverlap::Type OverlapType);
 
@@ -145,13 +159,13 @@ public:
 	int GetGen()const {return m_Generation;}
 	//Get the current type
 	ELSystemType GetType() const {return  m_Type;}
-
-
+	//Resimulate the tree
+	void ResimulateTree();
 private:
 	
 	void CreateFoliageTypeInstance();
-	void ResimulateTree();
-	void CreateSplineMeshComponents(USplineComponent* spline, float width);
+
+	void CreateSplineMeshComponents(USplineComponent* spline, UTree* branch);
 	void CreateLeafMeshes(UTree* tree, USplineComponent* spline);
 	void ConvertMeshes();
 

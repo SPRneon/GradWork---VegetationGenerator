@@ -102,9 +102,11 @@ void ULSystemComponent::GetTileLayout(FLSTileLayout & OutTileLayout) const
 	}
 }
 
-bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFoliageInstances)
+bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredLSysInstance>& OutFoliageInstances)
 {
-	#if WITH_EDITOR
+#if WITH_EDITOR
+	UE_LOG(LogTemp,Log,TEXT("Went in Execute simul"));
+
 	FBodyInstance* BoundsBodyInstance = GetBoundsBodyInstance();
 	if (LSystemSpawner)
 	{
@@ -121,7 +123,7 @@ bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFo
 
 		LSystemSpawner->SimulateIfNeeded();
 
-		TArray<TFuture< TArray<FDesiredFoliageInstance>* >> Futures;
+		TArray<TFuture< TArray<FDesiredLSysInstance>* >> Futures;
 		for (int32 X = 0; X < TileLayout.NumTilesX; ++X)
 		{
 			for (int32 Y = 0; Y < TileLayout.NumTilesY; ++Y)
@@ -142,12 +144,12 @@ bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFo
 				// Create a temp tile that will contain the composite contents of the tile after accounting for overlap
 				ULSystemTile* CompositeTile = LSystemSpawner->CreateTempTile();
 
-				Futures.Add(Async<TArray<FDesiredFoliageInstance>*>(EAsyncExecution::ThreadPool, [=]()
+				Futures.Add(Async<TArray<FDesiredLSysInstance>*>(EAsyncExecution::ThreadPool, [=]()
 				{
 					if (LastCancelPtr->GetValue() != LastCanelInit)
 					{
 						// The counter has changed since we began, meaning the user canceled the operation
-						return new TArray<FDesiredFoliageInstance>();
+						return new TArray<FDesiredLSysInstance>();
 					}
 
 					//@todo proc foliage: Determine the composite contents of the tile (including overlaps) without copying everything to a temp tile
@@ -184,7 +186,7 @@ bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFo
 					const FVector OrientedOffset = FVector(X, Y, 0.f) * TileSize;
 					const FTransform TileTM(OrientedOffset + WorldPosition);
 
-					TArray<FDesiredFoliageInstance>* DesiredInstances = new TArray<FDesiredFoliageInstance>();
+					TArray<FDesiredLSysInstance>* DesiredInstances = new TArray<FDesiredLSysInstance>();
 					CompositeTile->ExtractDesiredInstances(*DesiredInstances, TileTM, ProceduralGuid, TileLayout.HalfHeight, BoundsBodyInstance);
 
 					return DesiredInstances;
@@ -227,7 +229,7 @@ bool ULSystemComponent::ExecuteSimulation(TArray<FDesiredFoliageInstance>& OutFo
 					bFirstTime = false;
 				}
 
-				TArray<FDesiredFoliageInstance> DesiredInstances = *Futures[FutureIdx++].Get();
+				TArray<FDesiredLSysInstance> DesiredInstances = *Futures[FutureIdx++].Get();
 				
 				OutFoliageInstances.Append(DesiredInstances);
 				//delete DesiredInstances;
@@ -249,7 +251,7 @@ void ULSystemComponent::PostEditImport()
 	ProceduralGuid = FGuid::NewGuid();
 }
 
-bool ULSystemComponent::GenerateProceduralContent(TArray<FDesiredFoliageInstance>& OutLSystemTypes)
+bool ULSystemComponent::GenerateProceduralContent(TArray<FDesiredLSysInstance>& OutLSystemTypes)
 {
 #if WITH_EDITOR
 	
@@ -266,6 +268,21 @@ bool ULSystemComponent::GenerateProceduralContent(TArray<FDesiredFoliageInstance
 
 void ULSystemComponent::RemoveProceduralContent()
 {
+	#if WITH_EDITOR
+	UWorld* World = GetWorld();
+
+	for (ULevel* Level : World->GetLevels())
+	{
+		if (Level)
+		{
+			//AInstancedFoliageActor* IFA = AInstancedFoliageActor::GetInstancedFoliageActorForLevel(Level);
+			//if (IFA)
+			//{
+			//	IFA->DeleteInstancesForProceduralFoliageComponent(this);
+			//}
+		}
+	}
+#endif
 }
 
 bool ULSystemComponent::HasSpawnedAnyInstances()

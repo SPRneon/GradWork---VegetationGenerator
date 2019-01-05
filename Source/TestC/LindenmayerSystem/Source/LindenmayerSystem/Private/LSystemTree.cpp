@@ -18,7 +18,6 @@ TArray<FString> UTree::GetLStrings()
 TArray<UTree*> UTree::GetBranches()
 {
 	TArray<UTree*> branches;
-
 	FetchBranches(branches);
 
 	return branches;

@@ -5,15 +5,22 @@
 //#include "LSystemTree.h"
 #include "LSytemTurtle.h"
 #include "LSystemTree.h"
+#include "Stats2.h"
+#include "InstancedLSystemFoliage.h"
 #include "LSystemSplineGenerator.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
+#include "Components/BrushComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Runtime/Foliage/Public/InstancedFoliageActor.h"
+
 #include "EngineUtils.h"
 #include "ConstructorHelpers.h"
 #include "LindenmayerSystem/Source/LindenmayerSystem/Public/LindemayerFoliageType.h"
+
+
+
 
 
 // Sets default values
@@ -27,13 +34,20 @@ ALSystemFoliage::ALSystemFoliage()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> splineMesh(TEXT("/Game/VegetationGenerator/Branch_S.Branch_S"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> splineMesh(TEXT("/Game/VegetationGenerator/BranchSplineSmall.BranchSplineSmall"));
 	m_SplineMesh = splineMesh.Object;
+	
 
 	
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> LeafMeshObj(TEXT("/Game/VegetationGenerator/Leaf.Leaf"));
 	m_LeafMesh = LeafMeshObj.Object;	
 	m_IsAlive = true;
+
+	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
+	//m_LeafMeshComponents->RegisterComponent();
+	m_LeafMeshComponents->SetStaticMesh(m_LeafMesh);
+	m_LeafMeshComponents->SetFlags(RF_Transactional);
+	this->AddInstanceComponent(m_LeafMeshComponents);
 	
 }
 
@@ -84,6 +98,7 @@ void ALSystemFoliage::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 	UE_LOG(LogTemp,Log, TEXT("Property changed: %s"), *PropertyChangedEvent.GetPropertyName().ToString())
 	if(PropertyChangedEvent.GetPropertyName() == "M_Generation")
 	{
+		Initialize(m_Generation,m_Type);
 		ResimulateTree();
 	}
 }
@@ -91,11 +106,18 @@ void ALSystemFoliage::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 
 void ALSystemFoliage::PostEditMove(bool bFinished)
 {
-
+	UE_LOG(LogTemp,Log, TEXT("Actor (%s) was moved"), *this->GetName());
+	if(bFinished)
+	{
+		Initialize(m_Generation,m_Type);
+		ResimulateTree();
+	}
 }
 
 void ALSystemFoliage::ResimulateTree()
 {
+	m_LeafMeshComponents->ClearInstances();
+
 	for(auto i = 0; i < m_SplineComponents.Num();++i)
 	{
 		m_SplineComponents[i]->UnregisterComponent();
@@ -109,6 +131,7 @@ void ALSystemFoliage::ResimulateTree()
 		m_SplineMeshComponents[i]->DestroyComponent();
 	}
 	m_SplineMeshComponents.Empty();
+
 
 	for(auto i = 0; i < m_RootTree->GetBranches().Num(); ++i)
 	{
@@ -131,19 +154,22 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 		if(branch->ShouldDraw())
 		{			
 			auto newSpline  = NewObject<USplineComponent>(this);
+			newSpline->bShouldVisualizeScale = true;
 			auto points = branch->GetPoints();
 			newSpline->ClearSplinePoints();
 			for(auto i = 0; i < points.Num(); i++)
 			{
 				newSpline->AddSplineWorldPoint(points[i]);
+				newSpline->SetSplinePointType(i,ESplinePointType::Curve,false);
 			}
 			newSpline->RegisterComponentWithWorld(GetWorld());
 			newSpline->SetUnselectedSplineSegmentColor(FLinearColor::Green);
+			newSpline->UpdateSpline();
 			AddOwnedComponent(newSpline);
 			m_SplineComponents.Add(newSpline);
 			newSpline->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
 			UE_LOG(LogTemp,Log,TEXT("ALSystemFoliage::CreateSplineMeshComponent: %s"), *branch->GetLString())
-			CreateSplineMeshComponents(newSpline, branch->GetWidth());
+			CreateSplineMeshComponents(newSpline, branch);
 			CreateLeafMeshes(branch, newSpline);
 		}
 	}
@@ -156,36 +182,18 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 
 void ALSystemFoliage::CreateFoliageTypeInstance()
 {
-	//TActorIterator<AInstancedFoliageActor> foliageIterator(GetWorld());
-	//AInstancedFoliageActor* foliageActor = *foliageIterator;
-
-	//TArray<UInstancedStaticMeshComponent*> components;
- //   foliageActor->GetComponents<UInstancedStaticMeshComponent>(components);
- //   //UInstancedStaticMeshComponent* meshComponent = components[0];
-
-
-	/*UInstancedStaticMeshComponent* meshComponent = NewObject<UInstancedStaticMeshComponent>(Root, UInstancedStaticMeshComponent::StaticClass(), NAME_None, RF_Transactional);
-     meshComponent->AttachTo(Root);
-     meshComponent->SetStaticMesh(Mesh->GetStaticMesh());
-     meshComponent->RegisterComponent();*/
-
-
-	/*FTransform transform = FTransform();
-     for (int32 x = 1; x < 20; x++)
-     {
-         for (int32 y = 1; y < 20; y++)
-         {
-             transform.SetLocation(FVector(1000.f * x, 1000.f * y, 0.f));
-             meshComponent->AddInstance(transform);
-         }
-     }*/
 
 }
 
-void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, float width)
+void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, UTree* branch)
 {
+	
+
 	if(spline->GetNumberOfSplinePoints() > 1){
 
+		float startWidth = ((branch->GetRoot() != nullptr) ? branch->GetRoot()->GetWidth() : branch->GetWidth());
+		float endWidth = branch->GetWidth();
+		float deltaWidth = (startWidth - endWidth) / (spline->GetNumberOfSplinePoints() - 1); 
 			for(auto i = 0; i < spline->GetNumberOfSplinePoints() - 1; ++i)
 			{
 				auto startPos =spline->GetLocationAtSplinePoint(i,ESplineCoordinateSpace::Local);
@@ -197,12 +205,14 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, float
 					startTans.X = 0.2f;
 				
 				auto newSplineMesh = NewObject<USplineMeshComponent>(this);
+
+
 				
 				newSplineMesh->SetStaticMesh(m_SplineMesh);
 				newSplineMesh->SetMobility(EComponentMobility::Movable);
 				newSplineMesh->SetStartAndEnd(startPos,startTans,endPos,endTan,true);
-				newSplineMesh->SetStartScale(FVector2D(width,width));
-				newSplineMesh->SetEndScale(FVector2D(width,width));
+				newSplineMesh->SetStartScale(FVector2D(startWidth - deltaWidth * (i-1) , startWidth- deltaWidth * (i-1)));
+				newSplineMesh->SetEndScale(FVector2D(startWidth - deltaWidth * (i), startWidth - deltaWidth * (i)));
 				m_SplineMeshComponents.Add(newSplineMesh);
 				newSplineMesh->RegisterComponentWithWorld(GetWorld());
 				AddOwnedComponent(newSplineMesh);
@@ -213,20 +223,19 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, float
 
 void ALSystemFoliage::CreateLeafMeshes(UTree* tree, USplineComponent* spline)
 {
-
-	UInstancedStaticMeshComponent *ISMComp = NewObject<UInstancedStaticMeshComponent>(this);
-	ISMComp->RegisterComponent();
-	ISMComp->SetStaticMesh(m_LeafMesh);
-	ISMComp->SetFlags(RF_Transactional);
-	this->AddInstanceComponent(ISMComp);
-
-
-
+	FTransform newtran;
+	newtran = GetActorTransform();
 	for(auto i = 0; i < tree->GetLeaves().Num();++i)
 	{
-		auto newtran =  new FTransform();
-		newtran->SetLocation(tree->GetLeaves()[i]->location);	
-		newtran->SetRotation(tree->GetLeaves()[i]->orientation.ToOrientationQuat());
+		auto ori = tree->GetLeaves()[i]->orientation.ForwardVector;
+		auto loc = tree->GetLeaves()[i]->location;
+		newtran.SetLocation(newtran.GetLocation()+loc);
+		newtran.SetRotation(newtran.GetRotation().RotateVector(ori).ToOrientationQuat());		
+		m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
+		ori = ori.RotateAngleAxis(180,FVector(0,0,1));
+		newtran.SetRotation(newtran.GetRotation().RotateVector(ori).ToOrientationQuat());
+		m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
+		
 	}
 
 
@@ -247,6 +256,114 @@ void ALSystemFoliage::ConvertMeshes()
 	
 }
 
+
+bool ALSystemFoliage::FoliageTrace(const UWorld * InWorld, FHitResult & OutHit, const FDesiredLSysInstance & DesiredInstance, FName InTraceTag, bool InbReturnFaceIndex, const FLSysTraceFilterFunc & FilterFunc)
+{
+	
+
+	FCollisionQueryParams QueryParams(InTraceTag, SCENE_QUERY_STAT_ONLY(LSA_FoliageTrace), true);
+	QueryParams.bReturnFaceIndex = InbReturnFaceIndex;
+
+
+	const FVector Dir = (DesiredInstance.EndTrace - DesiredInstance.StartTrace).GetSafeNormal();
+	const FVector StartTrace = DesiredInstance.StartTrace - (Dir * DesiredInstance.TraceRadius);
+
+	TArray<FHitResult> Hits;
+	FCollisionShape SphereShape;
+	SphereShape.SetSphere(DesiredInstance.TraceRadius);
+	InWorld->SweepMultiByObjectType(Hits, StartTrace, DesiredInstance.EndTrace, FQuat::Identity, FCollisionObjectQueryParams(ECC_WorldStatic), SphereShape, QueryParams);
+
+	for (const FHitResult& Hit : Hits)
+	{
+		const AActor* HitActor = Hit.GetActor();
+
+		//Check for blocking volume if present
+		//TODO: Easily just make blocking volume inherit from lsystemvolume
+		//if (DesiredInstance.PlacementMode == EFoliagePlacementMode::Procedural)
+		//{
+		//	if (const ALSystemBlockingVolume* ProceduralFoliageBlockingVolume = Cast<AProceduralFoliageBlockingVolume>(HitActor))
+		//	{
+		//		const AProceduralFoliageVolume* ProceduralFoliageVolume = ProceduralFoliageBlockingVolume->ProceduralFoliageVolume;
+		//		if (ProceduralFoliageVolume == nullptr || ProceduralFoliageVolume->ProceduralComponent == nullptr || ProceduralFoliageVolume->ProceduralComponent->GetProceduralGuid() == DesiredInstance.ProceduralGuid)
+		//		{
+		//			return false;
+		//		}
+		//	}
+		//	else if (HitActor && HitActor->IsA<AProceduralFoliageVolume>()) //we never want to collide with our spawning volume
+		//	{
+		//		continue;
+		//	}
+		//}
+
+		const UPrimitiveComponent* HitComponent = Hit.GetComponent();
+		check(HitComponent);
+
+		// In the editor traces can hit "No Collision" type actors, so ugh. (ignore these)
+		if (!HitComponent->IsQueryCollisionEnabled() || HitComponent->GetCollisionResponseToChannel(ECC_WorldStatic) != ECR_Block)
+		{
+			continue;
+		}
+
+		// Don't place foliage on invisible walls / triggers / volumes
+		if (HitComponent->IsA<UBrushComponent>())
+		{
+			continue;
+		}
+
+		// Don't place foliage on itself
+		/*if (const AInstancedFoliageActor* FoliageActor = Cast<AInstancedFoliageActor>(HitActor))
+		{
+			if (const FFoliageMeshInfo* FoundMeshInfo = FoliageActor->FindMesh(DesiredInstance.FoliageType))
+			{
+				if (FoundMeshInfo->Component == HitComponent)
+				{
+					continue;
+				}
+			}
+		}*/
+
+		if (FilterFunc && FilterFunc(HitComponent) == false)
+		{
+			// supplied filter does not like this component, so keep iterating
+			continue;
+		}
+
+		bool bInsideProceduralVolumeOrArentUsingOne = true;
+		if (DesiredInstance.PlacementMode == EFoliagePlacementMode::Procedural && DesiredInstance.ProceduralVolumeBodyInstance)
+		{
+			// We have a procedural volume, so lets make sure we are inside it.
+			bInsideProceduralVolumeOrArentUsingOne = DesiredInstance.ProceduralVolumeBodyInstance->OverlapTest(Hit.ImpactPoint, FQuat::Identity, FCollisionShape::MakeSphere(1.f));	//make sphere of 1cm radius to test if we're in the procedural volume
+		}
+
+		OutHit = Hit;
+
+		return bInsideProceduralVolumeOrArentUsingOne;
+
+	}
+
+	return false;
+}
+
+bool ALSystemFoliage::CheckCollisionWithWorld(const UWorld * InWorld, const UFoliageType * Settings, const FLSysFoliageInstance & Inst, const FVector & HitNormal, const FVector & HitLocation, UPrimitiveComponent * HitComponent)
+{
+	if (!Settings->CollisionWithWorld)
+	{
+		return true;
+	}
+
+	FTransform OriginalTransform = Inst.GetInstanceWorldTransform();
+	OriginalTransform.SetRotation(FQuat::Identity);
+
+	FMatrix InstTransformNoRotation = OriginalTransform.ToMatrixWithScale();
+	OriginalTransform = Inst.GetInstanceWorldTransform();
+
+
+
+
+
+
+	return false;
+}
 
 ALSystemFoliage * ALSystemFoliage::Domination(ALSystemFoliage * A, ALSystemFoliage * B, ESimulationOverlap::Type OverlapType)
 {

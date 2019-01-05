@@ -8,7 +8,8 @@
 #include "LSytemTurtle.generated.h"
 
 
-
+//General Log
+DECLARE_LOG_CATEGORY_EXTERN(LogLindenmayer, Log, All);
 
 
 class UTree;
@@ -21,10 +22,13 @@ class ULSystemTurtle : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
 		UFUNCTION(BlueprintCallable, Category = "Lindenmayer") static UTree* IterateTurtle(FString lString, USceneComponent* root, ELSystemType type = ELSystemType::PLANT);
-private:		
+private:
+
+
+
 	//Func
 	static UTree* StartTurtle();
-	static void SetVar(ELSystemType type);
+	static bool SetVar(ELSystemType type);
 
 	//Rot Matrices
 	static FRotator m_Rotator;

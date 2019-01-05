@@ -52,6 +52,7 @@ public:
 		}
 			FString& getTail() { return m_Tail; }
 			float GetWeight() const { return m_Chance; }
+			void SetWeight(float weight){m_Chance = weight;}
 			
 			
 	};
@@ -66,6 +67,7 @@ private:
 	static void SetState(FString state) { m_State = state; }
 	static FString& GetState() { return m_State; }
 	static void AddRule(TCHAR head, FString tail, TCHAR pre = '\0', TCHAR post = '\0');
+	static void AddWeightedRule(TCHAR head, FString tail, float weight, TCHAR pre = '\0', TCHAR post = '\0');
 	static void CheckRules(LSystemRule* newRule);
 	static FString& Replace(TCHAR &head, TCHAR pre = '\0', TCHAR post = '\0');
 	static void Iterate();

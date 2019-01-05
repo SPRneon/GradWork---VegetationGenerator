@@ -8,6 +8,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "DetailCategoryBuilder.h"
+#include "LSystemVolume.h"
 #include "LSystemFoliage.h"
 #include "LSystemFoliageSpawner.h"
 //#include "VegetationGeneratorPluginEdMode.h"
@@ -74,25 +75,28 @@ void FLSystemComponentDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuil
 
 FReply FLSystemComponentDetails::OnResimulateClicked()
 {
-	UE_LOG(LogTemp,Log,TEXT("Clicked"));
+	
 
 	for (auto& Component : SelectedComponents)
 	{
 		if (Component.IsValid() && Component->LSystemSpawner)
 		{
 			FScopedTransaction Transaction(LOCTEXT("Resimulate_Transaction", "LSystem Foliage Simulation"));
-			TArray <FDesiredFoliageInstance> DesiredFoliageInstances;
+			TArray <FDesiredLSysInstance> DesiredFoliageInstances;
 			if (Component->GenerateProceduralContent(DesiredFoliageInstances))
 			{
-				/*FFoliagePaintingGeometryFilter OverrideGeometryFilter;
+				/*UE_LOG(LogTemp,Log,TEXT("Went in generate proc content"));
+				FFoliagePaintingGeometryFilter OverrideGeometryFilter;
 				OverrideGeometryFilter.bAllowLandscape = Component->bAllowLandscape;
 				OverrideGeometryFilter.bAllowStaticMesh = Component->bAllowStaticMesh;
 				OverrideGeometryFilter.bAllowBSP = Component->bAllowBSP;
 				OverrideGeometryFilter.bAllowFoliage = Component->bAllowFoliage;
 				OverrideGeometryFilter.bAllowTranslucent = Component->bAllowTranslucent;
 
-				FEdModeFoliage::AddInstances(Component->GetWorld(), DesiredFoliageInstances, OverrideGeometryFilter);*/
 
+				auto vol = Component->LSystemSpawner->
+				ALSystemVolume::SpawnLSystemInstances(Component->GetWorld(), DesiredFoliageInstances, OverrideGeometryFilter);
+*/
 				// If no instances were spawned, inform the user
 				if (!Component->HasSpawnedAnyInstances())
 				{

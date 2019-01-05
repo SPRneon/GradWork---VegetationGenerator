@@ -13,6 +13,7 @@
 #include "Curves/CurveFloat.h"
 #include "LindemayerFoliageType.generated.h"
 
+// Function for filtering out hit components during FoliageTrace
 
 
 class UFoliageType;

@@ -3,6 +3,7 @@
 #include "LSytemTurtle.h"
 #include "LSystemTree.h"
 #include "Components/SplineComponent.h"
+
 #include <string>
 
 UTree* ULSystemTurtle::m_Tree = nullptr;
@@ -15,7 +16,8 @@ FVector2D ULSystemTurtle::m_Angle;
 float ULSystemTurtle::m_Growth;
 float ULSystemTurtle::m_Width;
 
-
+//General Log
+DEFINE_LOG_CATEGORY(LogLindenmayer);
 
 UTree* ULSystemTurtle::IterateTurtle(FString lString, USceneComponent* root, ELSystemType type)
 {
@@ -29,13 +31,22 @@ UTree* ULSystemTurtle::IterateTurtle(FString lString, USceneComponent* root, ELS
 	m_Tree->m_StartPos = FVector::ZeroVector;
 	m_Tree->m_StartOri = rootOri;
 	m_Tree->m_Draw = true;
-	
-	SetVar(type);
-	return StartTurtle();
+	m_Tree->m_Branches.Empty();
+
+
+
+	if(SetVar(type))
+		return StartTurtle();
+	else
+	{
+		UE_LOG(LogLindenmayer, Log, TEXT("Selected Type for %s has no variables set in the Turtle"), *root->GetName());
+		return nullptr;
+	}
 
 }
 
-void ULSystemTurtle::SetVar(ELSystemType type)
+
+bool ULSystemTurtle::SetVar(ELSystemType type)
 {
 	switch(type)
 	{
@@ -43,8 +54,8 @@ void ULSystemTurtle::SetVar(ELSystemType type)
 	{
 		m_Angle.X = 45.f;
 		m_Angle.Y = 22.5f;
-		m_Growth = 20.f;
-		m_Width = 2.0f;
+		m_Growth = 100.f;
+		m_Width = 5.0f;
 		break;
 	}
 	case ELSystemType::WEED:
@@ -76,15 +87,18 @@ void ULSystemTurtle::SetVar(ELSystemType type)
 		break;
 	}
 	default:
+		return false;
 		break;
 	}
+	return true;
 }
 
 UTree* ULSystemTurtle::StartTurtle()
 {
 	int level = m_Tree->level;
 	int deepLevel = level;
-	FVector currPos = m_Tree->m_StartPos;	
+	FVector currPos = m_Tree->m_StartPos;
+	m_Tree->m_Points.Add(currPos);
 	FVector currOri = m_Tree->m_StartOri;
 	m_Tree->m_Width = m_Width;
 
@@ -103,34 +117,23 @@ UTree* ULSystemTurtle::StartTurtle()
 	{
 		TCHAR c = m_LString.GetCharArray()[i];
 		
+		//currOri.Normalize();
 		
 		
 		switch (c)
 		{
+			//GROWTH
 		case 'F':
-		{	
-			
+		{				
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currPos += (currOri * m_Growth);
+			currOri += (currOri - FVector(1,0,0)) / 3;
+			
+			currPos += (currOri.GetSafeNormal() * (m_Growth / (curr->level + 1)));
 			curr->m_Draw = true;	
 			curr->m_Points.Add(currPos);		
 			break;
 		}
-		case '+':
-		{
-			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currOri =  currOri.RotateAngleAxis(m_Angle.X, currUp);
-			break;
-		}
-		case '-':
-		{
-			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currOri = currOri.RotateAngleAxis(-m_Angle.X, currUp);
-			break;
-		}
+			//BRANCHING
 		case '[':
 		{
 			if(i != 0)
@@ -141,18 +144,16 @@ UTree* ULSystemTurtle::StartTurtle()
 			newTree->m_StartPos = currPos;
 			newTree->m_Points.Add(currPos);
 			newTree->m_StartOri = currOri;
-			newTree->m_Width = m_Width - (0.25 * level);
+			newTree->m_Width = FMath::Max(2.0f,  2/3 * curr->m_Width);
 			curr->m_EndOri = currOri;
 			curr->m_Branches.Add(newTree);			
 			curr = newTree;
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
 			break;
 		}
 		case ']':
 		{	
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
 
 			--level;
 			if(level != -1)				
@@ -162,55 +163,71 @@ UTree* ULSystemTurtle::StartTurtle()
 			currPos = curr->m_Points.Last();
 			break;
 		}
-		case 'X':
-		{	
+			//ROTATION
+			///Y AXIS
+		case '+':
+		{
+			
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
+			currOri =  currOri.RotateAngleAxis(m_Angle.X, currUp);
+				
 			break;
 		}
-		case '&':
-		{
-			curr->m_LString.AppendChar(c);
-			currOri = currOri.RotateAngleAxis(m_Angle.Y, currRight);
-
-			break;
-		}
-		case '^':
+		case '-':
 		{
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currOri = currOri.RotateAngleAxis(-m_Angle.Y, currRight);
-
-			break;
-		}
-		case '\\':
-		{
-			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currOri = currOri.RotateAngleAxis(m_Angle.Y, currFor);
-
-			break;
-		}
-		case '/':
-		{
-			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
-			currOri = currOri.RotateAngleAxis(-m_Angle.Y, currFor);
-
+			currOri = currOri.RotateAngleAxis(-m_Angle.X, currUp);
 			break;
 		}
 		case '|':
 		{
 			currOri = currOri.RotateAngleAxis(180,currUp);
 			curr->SetLString(curr->m_LString + c);
-			//curr->m_LString.AppendChar(c);
+			break;
+		}
+			///X-AXIS
+		case '&':
+		{
+			curr->m_LString.AppendChar(c);
+			currOri = currOri.RotateAngleAxis(m_Angle.Y, FVector(0,0,1));
+			FMath::ClampAngle(currOri.Z,0.2f,360);
+
+			break;
+		}
+		case '^':
+		{
+			curr->SetLString(curr->m_LString + c);
+			currOri = currOri.RotateAngleAxis(-m_Angle.Y, FVector(0,0,1));
+			FMath::ClampAngle(currOri.Z,0.2f,360);
+			break;
+		}
+			///Z AXIS
+		case '\\':
+		{
+			curr->SetLString(curr->m_LString + c);
+			currOri = currOri.RotateAngleAxis(m_Angle.Y, FVector(0,1,0));
+			FMath::ClampAngle(currOri.Y,0.2f,360);
+			break;
+		}
+		case '/':
+		{
+			curr->SetLString(curr->m_LString + c);
+			currOri = currOri.RotateAngleAxis(-m_Angle.Y, FVector(0,1,0));
+			FMath::ClampAngle(currOri.Y,0.2f,360);
+			break;
+		}
+
+			//SEGMENTS
+		case 'X':
+		{	
+			curr->SetLString(curr->m_LString + c);
 			break;
 		}
 		case 'L':
 		{
 			auto newLeaf = new UTree::Leaf();
 			newLeaf->location = currPos;
-			newLeaf->orientation = currOri;
+			newLeaf->orientation =  currOri;
 			curr->m_Leaves.Add(newLeaf);
 			break;
 			
@@ -224,9 +241,9 @@ UTree* ULSystemTurtle::StartTurtle()
 		curr->m_EndPos = currPos;
 
 
-		if(level > deepLevel)
-			deepLevel = level;
+		deepLevel = FMath::Max(level, deepLevel);
 	}
+
 	
 	
 	return curr;

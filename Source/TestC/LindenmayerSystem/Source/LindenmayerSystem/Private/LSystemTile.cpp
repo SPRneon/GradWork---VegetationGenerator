@@ -80,8 +80,11 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size,c
 		Rotation.Pitch = LocalStream.FRandRange(0, 5);
 
 
-		FActorSpawnParameters SpawnParams;		
-		ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(Location, Rotation,SpawnParams);
+		FActorSpawnParameters SpawnParams;
+		
+		//ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(Location, Rotation,SpawnParams);
+
+		ALSystemFoliage* NewInst = NewObject<ALSystemFoliage>();
 		NewInst->m_Generation = InAge;
 		NewInst->Type = Type;
 		NewInst->GetTransform().SetScale3D(Size);
@@ -256,7 +259,7 @@ void ULSystemTile::Simulate(const ULSystemFoliageSpawner * InFoliageSpawner, con
 	RunSimulation(MaxNumSteps, true);
 }
 
-void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredFoliageInstance>& OutDesiredInstances, const FTransform & WorldTM, const FGuid & ProceduralGuid, const float HalfHeight, const FBodyInstance * VolumeBodyInstance, bool bEmptyTileInfo)
+void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredLSysInstance>& OutDesiredInstances, const FTransform & WorldTM, const FGuid & ProceduralGuid, const float HalfHeight, const FBodyInstance * VolumeBodyInstance, bool bEmptyTileInfo)
 {
 
 	const FCollisionQueryParams Params(NAME_None, FCollisionQueryParams::GetUnknownStatId(), true);
@@ -271,13 +274,13 @@ void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredFoliageInstance>& OutD
 		FVector EndRay = StartRay;
 		EndRay.Z -= (HalfHeight*2.f + 10.f);	//add 10cm to bottom position of raycast. This is needed because volume is usually placed directly on geometry and then you get precision issues
 
-		FDesiredFoliageInstance* DesiredInst = new (OutDesiredInstances)FDesiredFoliageInstance(StartRay, EndRay, type->GetMaxRadius());
+		FDesiredLSysInstance* DesiredInst = new (OutDesiredInstances)FDesiredLSysInstance(StartRay, EndRay, type->GetMaxRadius());
 		DesiredInst->Rotation = FQuat( Instance->GetActorRotation());
 		DesiredInst->ProceduralGuid = ProceduralGuid;
 		DesiredInst->FoliageType = type;
 		DesiredInst->Age = Instance->GetGen();
 		DesiredInst->ProceduralVolumeBodyInstance = VolumeBodyInstance;
-		DesiredInst->PlacementMode = EFoliagePlacementMode::Procedural;
+		DesiredInst->PlacementMode = ELSysPlacementMode::Procedural;
 	}
 
 	if (bEmptyTileInfo)
@@ -311,7 +314,8 @@ void ULSystemTile::RemoveInstance(ALSystemFoliage * Inst)
 	}
 	
 	InstancesSet.Remove(Inst);
-	delete Inst;
+	MarkPendingRemoval(Inst);
+	//delete Inst;
 }
 
 void ULSystemTile::RemoveInstances()

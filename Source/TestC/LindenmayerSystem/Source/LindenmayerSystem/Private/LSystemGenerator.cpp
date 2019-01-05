@@ -4,6 +4,7 @@
 //#include "TestC.h"
 
 
+
 FString ULSystemGenerator::m_State = "";
 std::vector<ULSystemGenerator::LSystemRule*> ULSystemGenerator::m_vRules;
 
@@ -18,11 +19,11 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 	{
 		UE_LOG(LogTemp, Log, TEXT("This is a plant"));
 		SetState("F");
-		AddRule('F', "F[//F][&&F]");
+		AddWeightedRule('F', "F[//F][&&F]",0.10f);
 		AddRule('F', "F++");
 		AddRule('F', "FF");
 		AddRule('F', "|F");
-		AddRule('F', "F[F//L]");
+		AddWeightedRule('F', "F[FL]", 2.0f);
 		break;
 	}
 	case ELSystemType::WEED:
@@ -79,6 +80,11 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 void ULSystemGenerator::AddRule(TCHAR head, FString tail, TCHAR pre, TCHAR post)
 {	
 	m_vRules.push_back(new LSystemRule(head, tail, pre, post));
+}
+
+void ULSystemGenerator::AddWeightedRule(TCHAR head, FString tail, float weight, TCHAR pre, TCHAR post)
+{		
+	m_vRules.push_back(new LSystemRule(head, tail, pre, post,weight));
 }
 
 void ULSystemGenerator::CheckRules(LSystemRule* newRule)
