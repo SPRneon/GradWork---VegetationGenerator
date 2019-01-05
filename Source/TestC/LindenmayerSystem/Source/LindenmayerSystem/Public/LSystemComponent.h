@@ -109,6 +109,9 @@ class ULSystemComponent : public UActorComponent
 	/** Determines the basic layout of the tiles used in the simulation */
 	void GetTileLayout(FLSTileLayout& OutTileLayout) const;
 
+	/**@returns the spawning volume**/
+	AVolume* GetSpawningVolume() const {return SpawningVolume;}
+
 	void SetSpawningVolume(AVolume* InSpawningVolume) { SpawningVolume = InSpawningVolume; }
 	const FGuid& GetProceduralGuid() const { return ProceduralGuid; }
 

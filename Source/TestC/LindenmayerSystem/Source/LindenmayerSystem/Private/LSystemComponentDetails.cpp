@@ -91,12 +91,13 @@ FReply FLSystemComponentDetails::OnResimulateClicked()
 				OverrideGeometryFilter.bAllowStaticMesh = Component->bAllowStaticMesh;
 				OverrideGeometryFilter.bAllowBSP = Component->bAllowBSP;
 				OverrideGeometryFilter.bAllowFoliage = Component->bAllowFoliage;
-				OverrideGeometryFilter.bAllowTranslucent = Component->bAllowTranslucent;
+				OverrideGeometryFilter.bAllowTranslucent = Component->bAllowTranslucent;*/
 
 
-				auto vol = Component->LSystemSpawner->
-				ALSystemVolume::SpawnLSystemInstances(Component->GetWorld(), DesiredFoliageInstances, OverrideGeometryFilter);
-*/
+				auto vol = Component->GetSpawningVolume();
+				
+				CastChecked<ALSystemVolume>(vol)->SpawnLSystemInstances(DesiredFoliageInstances);
+
 				// If no instances were spawned, inform the user
 				if (!Component->HasSpawnedAnyInstances())
 				{

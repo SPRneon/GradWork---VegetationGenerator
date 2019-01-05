@@ -43,16 +43,19 @@ ALSystemFoliage::ALSystemFoliage()
 	m_LeafMesh = LeafMeshObj.Object;	
 	m_IsAlive = true;
 
-	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
-	//m_LeafMeshComponents->RegisterComponent();
-	m_LeafMeshComponents->SetStaticMesh(m_LeafMesh);
-	m_LeafMeshComponents->SetFlags(RF_Transactional);
-	this->AddInstanceComponent(m_LeafMeshComponents);
+	
 	
 }
 
 void ALSystemFoliage::Initialize(int age, ELSystemType type)
 {
+	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
+	m_LeafMeshComponents->RegisterComponent();
+	m_LeafMeshComponents->SetStaticMesh(m_LeafMesh);
+	m_LeafMeshComponents->SetFlags(RF_Transactional);
+	this->AddInstanceComponent(m_LeafMeshComponents);
+
+
 	m_Generation = age;
 	m_Type = type;
 	m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
