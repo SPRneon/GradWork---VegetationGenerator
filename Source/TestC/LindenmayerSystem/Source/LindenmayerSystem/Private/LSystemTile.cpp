@@ -82,9 +82,9 @@ ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size,c
 
 		FActorSpawnParameters SpawnParams;
 		
-		ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(ALSystemFoliage::StaticClass(),Location, Rotation);
+		//ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(ALSystemFoliage::StaticClass(),Location, Rotation);
 
-		//ALSystemFoliage* NewInst = NewObject<ALSystemFoliage>();
+		ALSystemFoliage* NewInst = NewObject<ALSystemFoliage>();
 		NewInst->m_Generation = InAge;
 		NewInst->Type = Type;
 		NewInst->GetTransform().SetScale3D(Size);

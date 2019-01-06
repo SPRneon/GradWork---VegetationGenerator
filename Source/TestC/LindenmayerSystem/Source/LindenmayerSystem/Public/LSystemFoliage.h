@@ -138,7 +138,7 @@ public:
 public:
 #if WITH_EDITOR
 	static bool FoliageTrace(const UWorld* InWorld, FHitResult& OutHit, const FDesiredLSysInstance& DesiredInstance, FName InTraceTag = NAME_None, bool InbReturnFaceIndex = false, const FLSysTraceFilterFunc& FilterFunc = FLSysTraceFilterFunc());
-	static bool CheckCollisionWithWorld(const UWorld* InWorld, const UFoliageType* Settings, const FLSysFoliageInstance& Inst, const FVector& HitNormal, const FVector& HitLocation, UPrimitiveComponent* HitComponent);
+	static bool CheckCollisionWithWorld(const UWorld* InWorld, const ULSystemFoliageType* Settings, const FLSysFoliageInstance& Inst, const FVector& HitNormal, const FVector& HitLocation, UPrimitiveComponent* HitComponent);
 
 #endif
 

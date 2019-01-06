@@ -6,6 +6,7 @@
 #include "UObject/ObjectMacros.h"
 #include "GameFramework/Volume.h"
 #include "InstancedLSystemFoliage.h"
+#include "LSystemFoliage.h"
 #include "LandscapeComponent.h"
 #include "LSystemVolume.generated.h"
 
@@ -31,7 +32,7 @@ class ALSystemVolume : public AVolume
 #if WITH_EDITOR
 	
 	void SpawnLSystemInstances(const TArray<FDesiredLSysInstance>& desiredInsts);
-
+	void SpawnLSystemInstance(const ULSystemFoliageType* Settings, const FLSysFoliageInstance& Instance, UActorComponent* BaseComponent);
 
 
 private:
@@ -40,6 +41,7 @@ private:
 
 	void CalculatePotentialInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, TArray<FLSysPotentialInstance> OutPotentialInstances[NUM_INSTANCE_BUCKETS], LandscapeLayerCacheData* LandscapeLayerCachesPtr = nullptr);
 	void AddInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances,const TArray<int32>& ExistingInstanceBuckets, const float Pressure = 1.0f, LandscapeLayerCacheData* LandscapeLayerCachesPtr = nullptr);
+	void AddInstance(ALSystemFoliage* LSA);
 public:
 	
 

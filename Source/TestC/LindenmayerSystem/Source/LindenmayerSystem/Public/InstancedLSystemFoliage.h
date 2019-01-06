@@ -235,7 +235,7 @@ struct FDesiredLSysInstance
 
 #if WITH_EDITOR
 // Struct to hold potential instances we've sampled
-struct FOLIAGE_API FLSysPotentialInstance
+struct FLSysPotentialInstance
 {
 	FVector HitLocation;
 	FVector HitNormal;

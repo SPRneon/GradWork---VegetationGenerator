@@ -347,7 +347,7 @@ bool ALSystemFoliage::FoliageTrace(const UWorld * InWorld, FHitResult & OutHit, 
 	return false;
 }
 
-bool ALSystemFoliage::CheckCollisionWithWorld(const UWorld * InWorld, const UFoliageType * Settings, const FLSysFoliageInstance & Inst, const FVector & HitNormal, const FVector & HitLocation, UPrimitiveComponent * HitComponent)
+bool ALSystemFoliage::CheckCollisionWithWorld(const UWorld * InWorld, const ULSystemFoliageType * Settings, const FLSysFoliageInstance & Inst, const FVector & HitNormal, const FVector & HitLocation, UPrimitiveComponent * HitComponent)
 {
 	if (!Settings->CollisionWithWorld)
 	{

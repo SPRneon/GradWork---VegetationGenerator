@@ -2,7 +2,7 @@
 
 #include "LSystemVolume.h"
 #include "Components/BrushComponent.h"
-
+#include "Engine/World.h"
 #include "LSystemComponent.h"
 #include "LSystemFoliageSpawner.h"
 
@@ -47,6 +47,22 @@ void ALSystemVolume::SpawnLSystemInstances(const TArray<FDesiredLSysInstance>& d
 
 }
 
+void ALSystemVolume::SpawnLSystemInstance(const ULSystemFoliageType * Settings, const FLSysFoliageInstance & Instance, UActorComponent * BaseComponent)
+{
+	// We always spawn instances in base component level
+	ULevel* TargetLevel =  GetWorld()->GetCurrentLevel();
+	//CurrentFoliageTraceBrushAffectedLevels.AddUnique(TargetLevel);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.OverrideLevel = TargetLevel;
+	ALSystemFoliage* LSA  = GetWorld()->SpawnActor<ALSystemFoliage>(SpawnParams);
+
+
+	
+
+	
+
+}
+
 void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, const TArray<int32>& ExistingInstanceBuckets, const float Pressure, LandscapeLayerCacheData* LandscapeLayerCachesPtr)
 {
 	if (DesiredInstances.Num() == 0)
@@ -59,6 +75,32 @@ void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TAr
 	{
 		CalculatePotentialInstances(Settings, DesiredInstances, PotentialInstanceBuckets);
 	}
+
+	for (int32 BucketIdx = 0; BucketIdx < NUM_INSTANCE_BUCKETS; BucketIdx++)
+	{
+		TArray<FLSysPotentialInstance>& PotentialInstances = PotentialInstanceBuckets[BucketIdx];
+		float BucketFraction = (float)(BucketIdx + 1) / (float)NUM_INSTANCE_BUCKETS;
+
+		// We use the number that actually succeeded in placement (due to parameters) as the target
+		// for the number that should be in the brush region.
+		const int32 BucketOffset = (ExistingInstanceBuckets.Num() ? ExistingInstanceBuckets[BucketIdx] : 0);
+		int32 AdditionalInstances = FMath::Clamp<int32>(FMath::RoundToInt(BucketFraction * (float)(PotentialInstances.Num() - BucketOffset) * Pressure), 0, PotentialInstances.Num());
+		for (int32 Idx = 0; Idx < AdditionalInstances; Idx++)
+		{
+			FLSysPotentialInstance& PotentialInstance = PotentialInstances[Idx];
+			FLSysFoliageInstance Inst;
+			if (PotentialInstance.PlaceInstance(GetWorld(), Settings, Inst))
+			{
+				Inst.ProceduralGuid = PotentialInstance.DesiredInstance.ProceduralGuid;
+
+				SpawnLSystemInstance(Settings, Inst, PotentialInstance.HitComponent);
+			}
+		}
+	}
+}
+
+void ALSystemVolume::AddInstance(ALSystemFoliage * LSA)
+{
 }
 
 void ALSystemVolume::CalculatePotentialInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, TArray<FLSysPotentialInstance> OutPotentialInstances[NUM_INSTANCE_BUCKETS],  LandscapeLayerCacheData* LandscapeLayerCachesPtr)
