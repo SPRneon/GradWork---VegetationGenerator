@@ -5,6 +5,16 @@
 #include "LindemayerFoliageType.h"
 #include "LSystemFoliage.h"
 
+FLSysPotentialInstance::FLSysPotentialInstance(FVector InHitLocation, FVector InHitNormal, UPrimitiveComponent* InHitComponent, float InHitWeight, const FDesiredLSysInstance& InDesiredInstance)
+	: HitLocation(InHitLocation)
+	, HitNormal(InHitNormal)
+	, HitComponent(InHitComponent)
+	, HitWeight(InHitWeight)
+	, DesiredInstance(InDesiredInstance)
+{
+}
+
+
 bool FLSysPotentialInstance::PlaceInstance(const UWorld* InWorld, const ULSystemFoliageType* Settings, FLSysFoliageInstance& Inst, bool bSkipCollision)
 {
 	if (DesiredInstance.PlacementMode != ELSysPlacementMode::Procedural)

@@ -7,6 +7,7 @@
 #include "LSystemTree.h"
 #include "Stats2.h"
 #include "InstancedLSystemFoliage.h"
+#include "LSystemFoliageInstance.h"
 #include "LSystemSplineGenerator.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
@@ -62,6 +63,25 @@ void ALSystemFoliage::Initialize(int age, ELSystemType type)
 	m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);
 	CreateSplines(m_RootTree);
 }
+
+void ALSystemFoliage::Initialize(const FLSysPotentialInstance& Inst)
+{
+	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
+	m_LeafMeshComponents->RegisterComponent();
+	m_LeafMeshComponents->SetStaticMesh(m_LeafMesh);
+	m_LeafMeshComponents->SetFlags(RF_Transactional);
+	this->AddInstanceComponent(m_LeafMeshComponents);
+
+	{
+		m_Generation = Inst.DesiredInstance.Age;
+		Type = Inst.DesiredInstance.FoliageType;
+		m_Type= Type->LSystemType;
+		m_LString = ULSystemGenerator::GenerateLString(m_Type, m_Generation);	
+		m_RootTree = ULSystemTurtle::IterateTurtle(m_LString,Root,m_Type);
+		CreateSplines(m_RootTree);
+	}
+}
+
 
 TArray<USplineComponent*>& ALSystemFoliage::GetSplineComponentArray()
 {
@@ -260,7 +280,7 @@ void ALSystemFoliage::ConvertMeshes()
 }
 
 
-bool ALSystemFoliage::FoliageTrace(const UWorld * InWorld, FHitResult & OutHit, const FDesiredLSysInstance & DesiredInstance, FName InTraceTag, bool InbReturnFaceIndex, const FLSysTraceFilterFunc & FilterFunc)
+bool ALSystemFoliage::FoliageTrace(const UWorld* InWorld, FHitResult & OutHit, const FDesiredLSysInstance & DesiredInstance, FName InTraceTag, bool InbReturnFaceIndex, const FLSysTraceFilterFunc & FilterFunc)
 {
 	
 

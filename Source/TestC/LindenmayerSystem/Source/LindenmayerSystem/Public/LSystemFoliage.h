@@ -15,6 +15,7 @@
 
 
 struct FDesiredLSysInstance;
+struct FLSysPotentialInstance;
 struct FLSysFoliageInstance;
 class ULSystemTurtle;
 class UTree;
@@ -74,6 +75,7 @@ public:
 
 
 	void Initialize(int age, ELSystemType type);
+	void Initialize(const FLSysPotentialInstance& Inst);
 	TArray<USplineComponent*>& GetSplineComponentArray();
 	void CreateSplines(UTree* tree);
 

@@ -4,6 +4,7 @@
 #include "Components/BrushComponent.h"
 #include "Engine/World.h"
 #include "LSystemComponent.h"
+#include "LSystemFoliage.h"
 #include "LSystemFoliageSpawner.h"
 
 
@@ -47,15 +48,19 @@ void ALSystemVolume::SpawnLSystemInstances(const TArray<FDesiredLSysInstance>& d
 
 }
 
-void ALSystemVolume::SpawnLSystemInstance(const ULSystemFoliageType * Settings, const FLSysFoliageInstance & Instance, UActorComponent * BaseComponent)
+void ALSystemVolume::SpawnLSystemInstance(const ULSystemFoliageType * Settings, const FLSysFoliageInstance & Instance, const FLSysPotentialInstance& desiredInst)
 {
 	// We always spawn instances in base component level
 	ULevel* TargetLevel =  GetWorld()->GetCurrentLevel();
 	//CurrentFoliageTraceBrushAffectedLevels.AddUnique(TargetLevel);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.OverrideLevel = TargetLevel;
+	SpawnParams.Owner = this;
+	
+	
 	ALSystemFoliage* LSA  = GetWorld()->SpawnActor<ALSystemFoliage>(SpawnParams);
-
+	LSA->Initialize(desiredInst);
+	LSA->SetActorTransform(Instance.GetInstanceWorldTransform());
 
 	
 
@@ -93,7 +98,7 @@ void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TAr
 			{
 				Inst.ProceduralGuid = PotentialInstance.DesiredInstance.ProceduralGuid;
 
-				SpawnLSystemInstance(Settings, Inst, PotentialInstance.HitComponent);
+				SpawnLSystemInstance(Settings, Inst, PotentialInstance);
 			}
 		}
 	}
@@ -102,6 +107,12 @@ void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TAr
 void ALSystemVolume::AddInstance(ALSystemFoliage * LSA)
 {
 }
+
+bool ALSystemVolume::CheckLocationForPotentialInstance(const UWorld* InWorld, const ULSystemFoliageType* Settings, const FVector& Location, const FVector& Normal, TArray<FVector>& PotentialInstanceLocations, FLSysFoliageInstanceHash& PotentialInstanceHash)
+{
+	return false;
+}
+
 
 void ALSystemVolume::CalculatePotentialInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, TArray<FLSysPotentialInstance> OutPotentialInstances[NUM_INSTANCE_BUCKETS],  LandscapeLayerCacheData* LandscapeLayerCachesPtr)
 {
@@ -125,42 +136,31 @@ void ALSystemVolume::CalculatePotentialInstances(const ULSystemFoliageType* Sett
 	for (const FDesiredLSysInstance& DesiredInst : DesiredInstances)
 	{
 		FLSysTraceFilterFunc TraceFilterFunc;
-		//if (DesiredInst.PlacementMode == EFoliagePlacementMode::Manual && UISettings != nullptr)
-		//{
-		//	// Enable geometry filters when painting foliage manually
-		//	TraceFilterFunc = FFoliagePaintingGeometryFilter(*UISettings);
-		//}
-
-		/*if (OverrideGeometryFilter)
-		{
-			TraceFilterFunc = *OverrideGeometryFilter;
-		}
-*/
+		
 		FHitResult Hit;
 		static FName NAME_AddFoliageInstances = FName(TEXT("AddFoliageInstances"));
-		//if (ALSystemFoliage::FoliageTrace( Hit, DesiredInst, NAME_AddFoliageInstances, true, TraceFilterFunc))
-		//{
-		//	float HitWeight = 1.f;
 
-		//	UPrimitiveComponent* InstanceBase = Hit.GetComponent();
-		//	check(InstanceBase);
+		if (ALSystemFoliage::FoliageTrace(GetWorld(), Hit, DesiredInst, NAME_AddFoliageInstances, true, TraceFilterFunc))
+		{
+			float HitWeight = 1.f;
 
-		//	ULevel* TargetLevel = InstanceBase->GetComponentLevel();
-		//	// We can paint into new level only if FoliageType is shared
-		//	if (!CanPaint(Settings, TargetLevel))
-		//	{
-		//		continue;
-		//	}
+			UPrimitiveComponent* InstanceBase = Hit.GetComponent();
+			check(InstanceBase);
 
-		//	const bool bValidInstance = CheckLocationForPotentialInstance(InWorld, Settings, Hit.ImpactPoint, Hit.ImpactNormal, PotentialInstanceLocations, PotentialInstanceHash)
-		//		&& VertexMaskCheck(Hit, Settings)
-		//		&& LandscapeLayerCheck(Hit, Settings, LocalCache, HitWeight);
-		//	if (bValidInstance)
-		//	{
-		//		const int32 BucketIndex = FMath::RoundToInt(HitWeight * (float)(NUM_INSTANCE_BUCKETS - 1));
-		//		OutPotentialInstances[BucketIndex].Add(FPotentialInstance(Hit.ImpactPoint, Hit.ImpactNormal, InstanceBase, HitWeight, DesiredInst));
-		//	}
-		//}
+			ULevel* TargetLevel = InstanceBase->GetComponentLevel();
+			// We can paint into new level only if FoliageType is shared
+			
+
+			const bool bValidInstance = CheckLocationForPotentialInstance(GetWorld(), Settings, Hit.ImpactPoint, Hit.ImpactNormal, PotentialInstanceLocations, PotentialInstanceHash)
+				//&& VertexMaskCheck(Hit, Settings)
+				//&& LandscapeLayerCheck(Hit, Settings, LocalCache, HitWeight)
+			;
+			if (bValidInstance)
+			{
+				const int32 BucketIndex = FMath::RoundToInt(HitWeight * (float)(NUM_INSTANCE_BUCKETS - 1));
+				OutPotentialInstances[BucketIndex].Add(FLSysPotentialInstance(Hit.ImpactPoint, Hit.ImpactNormal, InstanceBase, HitWeight, DesiredInst));
+			}
+		}
 	}
 
 
