@@ -5,7 +5,9 @@
 #include "LindemayerFoliageType.h"
 #include "Engine/World.h"
 #include "LSystemFoliageSpawner.h"
+#include "LSystemFoliage.h"
 #include "LindemayerFoliageType.h"
+#include "LSystemFoliageInstance.h"
 #include "InstancedLSystemFoliage.h"
 
 
@@ -19,7 +21,7 @@ ULSystemTile::ULSystemTile(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-bool ULSystemTile::HandleOverlaps(ALSystemFoliage* Instance)
+bool ULSystemTile::HandleOverlaps(FLSysFolInstance* Instance)
 {
 	//TODO
 	// If the instance survives we mark all dominated overlaps as pending removal. They will be removed from the broadphase and will not spread seeds or age.
@@ -27,12 +29,12 @@ bool ULSystemTile::HandleOverlaps(ALSystemFoliage* Instance)
 	// Note that if the underlying data structures stay the same (i.e. no core engine changes) this should not matter. This gives us short term determinism, but not long term.
 
 	bool bSurvived = true;
-	TArray<FLSystemFoliageOverlap> Overlaps;
+	TArray<FLSysFoliageOverlap> Overlaps;
 	Broadphase.GetOverlaps(Instance, Overlaps);
 
-	for(const FLSystemFoliageOverlap& Overlap : Overlaps)
+	for(const FLSysFoliageOverlap& Overlap : Overlaps)
 	{
-		ALSystemFoliage* Dominated = ALSystemFoliage::Domination(Overlap.A, Overlap.B, Overlap.OverlapType);
+		FLSysFolInstance* Dominated = FLSysFolInstance::Domination(Overlap.A, Overlap.B, Overlap.OverlapType);
 		if (Dominated == Instance)
 		{
 			bSurvived = false;
@@ -42,9 +44,9 @@ bool ULSystemTile::HandleOverlaps(ALSystemFoliage* Instance)
 
 	if (bSurvived)
 	{
-		for (const FLSystemFoliageOverlap& Overlap : Overlaps)
+		for (const FLSysFoliageOverlap& Overlap : Overlaps)
 		{
-			if (ALSystemFoliage* Dominated = ALSystemFoliage::Domination(Overlap.A, Overlap.B, Overlap.OverlapType))
+			if (FLSysFolInstance* Dominated = FLSysFolInstance::Domination(Overlap.A, Overlap.B, Overlap.OverlapType))
 			{
 				// Should only be here if we didn't survive
 				check(Dominated != Instance);
@@ -64,48 +66,42 @@ bool ULSystemTile::HandleOverlaps(ALSystemFoliage* Instance)
 	return bSurvived;
 }
 
-ALSystemFoliage * ULSystemTile::NewSeed(const FVector & Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker)
+FLSysFolInstance * ULSystemTile::NewSeed(const FVector & Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker)
 {
 	const FVector InitRadius = 100.f * Size; //TODO get maxradius instead of 100.f
 	{
 		
-		
+		FLSysFolInstance* NewInst = new FLSysFolInstance();
+		NewInst->Location = Location;
 
 		// make a new local random stream to avoid changes to instance randomness changing the position of all other procedural instances
 		FRandomStream LocalStream = RandomStream;
 		RandomStream.GetUnsignedInt(); // advance the parent stream by one
 
 		FRotator Rotation = {0,0,0};
-		Rotation.Yaw   = LocalStream.FRandRange(0,360);
-		Rotation.Pitch = LocalStream.FRandRange(0, 5);
-
-
-		FActorSpawnParameters SpawnParams;
-		
-		//ALSystemFoliage* NewInst = GetWorld()->SpawnActor<ALSystemFoliage>(ALSystemFoliage::StaticClass(),Location, Rotation);
-
-		ALSystemFoliage* NewInst = NewObject<ALSystemFoliage>();
-		NewInst->m_Generation = InAge;
+		Rotation.Yaw   = LocalStream.FRandRange(0, Type->RandomYaw ? 360 : 0);
+		Rotation.Pitch = LocalStream.FRandRange(0, Type->RandomPitchAngle);
+		NewInst->Rotation = FQuat(Rotation);
+		NewInst->Age = InAge;
 		NewInst->Type = Type;
-		NewInst->GetTransform().SetScale3D(Size);
+		NewInst->Normal = FVector(0, 0, 1);
+		NewInst->Scale = Size.X;
 		NewInst->bBlocker = bBlocker;
-		//NewInst->Initialize()????
-
-
+		
 		// Add the seed if possible
 		Broadphase.Insert(NewInst);
 		const bool bSurvived = HandleOverlaps(NewInst);
-		return (bSurvived ? NewInst : nullptr);
+		return bSurvived ? NewInst : nullptr;
 	}
 
 	return nullptr;
 }
 
-float ULSystemTile::GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep)
+float ULSystemTile::GetSeedMinDistance(const FLSysFolInstance* Instance, const float NewInstanceAge, const int32 SimulationStep)
 {
 	const ULSystemFoliageType* Type = Instance->Type;
 	const int32 StepsLeft = Type->MaxAge - SimulationStep;
-	const float InstanceMaxAge = Type->GetNextAge(Instance->GetGen(), StepsLeft);
+	const float InstanceMaxAge = Type->GetNextAge(Instance->Age, StepsLeft);
 	const float NewInstanceMaxAge = Type->GetNextAge(NewInstanceAge, StepsLeft);
 
 	const float InstanceMaxScale = Type->GetScaleForAge(InstanceMaxAge);
@@ -144,8 +140,8 @@ FVector ULSystemTile::GetSeedOffset(const ULSystemFoliageType* Type, float MinDi
 
 void ULSystemTile::AgeSeeds()
 {
-	TArray<ALSystemFoliage*> NewSeeds;
-	for (ALSystemFoliage* Instance : InstancesSet)
+	TArray<FLSysFolInstance*> NewSeeds;
+	for (FLSysFolInstance* Instance : InstancesSet)
 	{
 		if (UserCancelled()){ return; }
 		if (Instance->IsAlive())
@@ -153,15 +149,15 @@ void ULSystemTile::AgeSeeds()
 			const ULSystemFoliageType* Type = Instance->Type;
 			if (SimulationStep <= Type->NumSteps && Type->GetSpawnsInShade() == bSimulateOnlyInShade)
 			{
-				const float CurrentAge = Instance->GetGen();
-				const float NewAge = Type->GetNextAge(Instance->GetGen(), 1);
+				const float CurrentAge = Instance->Age;
+				const float NewAge = Type->GetNextAge(Instance->Age, 1);
 				const float NewScale = Type->GetScaleForAge(NewAge);
 
-				const FVector Location = Instance->GetActorLocation();
+				const FVector Location = Instance->Location;
 
 				// Replace the current instance with the newly aged version
 				MarkPendingRemoval(Instance);
-				if (ALSystemFoliage* Inst = NewSeed(Location, FVector(NewScale), Type, NewAge))
+				if (FLSysFolInstance* Inst = NewSeed(Location, FVector(NewScale), Type, NewAge))
 				{
 					NewSeeds.Add(Inst);
 				}
@@ -169,7 +165,7 @@ void ULSystemTile::AgeSeeds()
 		}
 	}
 
-	for (ALSystemFoliage* Seed : NewSeeds)
+	for (FLSysFolInstance* Seed : NewSeeds)
 	{
 		InstancesSet.Add(Seed);
 	}
@@ -179,11 +175,11 @@ void ULSystemTile::AgeSeeds()
 	FlushPendingRemovals();
 }
 
-void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
+void ULSystemTile::SpreadSeeds(TArray<FLSysFolInstance*>& NewSeeds)
 {
 
 	//TODO Make sure Foliage spreads seeds
-	for (ALSystemFoliage* Inst : InstancesSet)
+	for (FLSysFolInstance* Inst : InstancesSet)
 	{
 		if (UserCancelled()){ return; }
 		if (Inst->IsAlive() == false)
@@ -207,8 +203,8 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 				
 				if (GlobalOffset.SizeSquared2D() + SMALL_NUMBER > MinDistanceToClear*MinDistanceToClear)
 				{
-					const FVector NewLocation = GlobalOffset + Inst->GetActorLocation();
-					if (ALSystemFoliage* NewInstance = NewSeed(NewLocation, FVector(NewScale), Inst->Type, NewAge))
+					const FVector NewLocation = GlobalOffset + Inst->Location;
+					if (FLSysFolInstance* NewInstance = NewSeed(NewLocation, FVector(NewScale), Inst->Type, NewAge))
 					{
 						NewSeeds.Add(NewInstance);
 					}
@@ -220,7 +216,7 @@ void ULSystemTile::SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds)
 
 
 
-void ULSystemTile::MarkPendingRemoval(ALSystemFoliage* ToRemove)
+void ULSystemTile::MarkPendingRemoval(FLSysFolInstance* ToRemove)
 {
 	if(ToRemove->IsAlive())
 	{
@@ -235,7 +231,7 @@ void ULSystemTile::MarkPendingRemoval(ALSystemFoliage* ToRemove)
 void ULSystemTile::FlushPendingRemovals()
 {
 
-	for (ALSystemFoliage* ToRemove : PendingRemovals)
+	for (FLSysFolInstance* ToRemove : PendingRemovals)
 	{
 		RemoveInstance(ToRemove);
 	}
@@ -268,17 +264,17 @@ void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredLSysInstance>& OutDesi
 	OutDesiredInstances.Reserve(InstancesSet.Num());
 	for (auto Instance : InstancesArray)
 	{
-		auto type = Instance->Type;
-		FVector StartRay = Instance->GetActorLocation() + WorldTM.GetLocation();
+		auto type = Instance.Type;
+		FVector StartRay = Instance.Location + WorldTM.GetLocation();
 		StartRay.Z += HalfHeight;
 		FVector EndRay = StartRay;
 		EndRay.Z -= (HalfHeight*2.f + 10.f);	//add 10cm to bottom position of raycast. This is needed because volume is usually placed directly on geometry and then you get precision issues
 
 		FDesiredLSysInstance* DesiredInst = new (OutDesiredInstances)FDesiredLSysInstance(StartRay, EndRay, type->GetMaxRadius());
-		DesiredInst->Rotation = FQuat( Instance->GetActorRotation());
+		DesiredInst->Rotation = FQuat( Instance.Rotation);
 		DesiredInst->ProceduralGuid = ProceduralGuid;
 		DesiredInst->FoliageType = type;
-		DesiredInst->Age = Instance->GetGen();
+		DesiredInst->Age = Instance.Age;
 		DesiredInst->ProceduralVolumeBodyInstance = VolumeBodyInstance;
 		DesiredInst->PlacementMode = ELSysPlacementMode::Procedural;
 	}
@@ -295,7 +291,7 @@ void ULSystemTile::CopyInstancesToTile(ULSystemTile * ToTile, const FBox2D & Loc
 
 	//@todo proc foliage: Would be better to use the max radius of any instances in the tile instead of overlap to define the outer AABB
 
-	TArray<ALSystemFoliage*> InstancesIncludingOverlap;
+	TArray<FLSysFolInstance*> InstancesIncludingOverlap;
 	const FBox2D OuterLocalAABB(LocalAABB.Min, LocalAABB.Max + Overlap);
 	
 	// Get all the instances in the outer AABB (so we include potential blockers)
@@ -305,7 +301,7 @@ void ULSystemTile::CopyInstancesToTile(ULSystemTile * ToTile, const FBox2D & Loc
 	ToTile->AddInstances(InstancesIncludingOverlap, RelativeTM, LocalAABB);
 }
 
-void ULSystemTile::RemoveInstance(ALSystemFoliage * Inst)
+void ULSystemTile::RemoveInstance(FLSysFolInstance * Inst)
 {
 	if (Inst->IsAlive())
 	{
@@ -314,13 +310,13 @@ void ULSystemTile::RemoveInstance(ALSystemFoliage * Inst)
 	}
 	
 	InstancesSet.Remove(Inst);
-	MarkPendingRemoval(Inst);
-	//delete Inst;
+	//MarkPendingRemoval(Inst);
+	delete Inst;
 }
 
 void ULSystemTile::RemoveInstances()
 {
-	for (ALSystemFoliage* Inst : InstancesSet)
+	for (FLSysFolInstance* Inst : InstancesSet)
 	{
 		MarkPendingRemoval(Inst);
 	}
@@ -343,7 +339,7 @@ void ULSystemTile::GetResourceSizeEx(FResourceSizeEx & CumulativeResourceSize)
 {
 	Super::GetResourceSizeEx(CumulativeResourceSize);
 
-	for (ALSystemFoliage* Inst : InstancesSet)
+	for (FLSysFolInstance* Inst : InstancesSet)
 	{
 		CumulativeResourceSize.AddDedicatedSystemMemoryBytes(sizeof(ALSystemFoliage));
 	}
@@ -355,22 +351,21 @@ void ULSystemTile::BeginDestroy()
 	RemoveInstances();
 }
 
-void ULSystemTile::GetInstancesInAABB(const FBox2D & LocalAABB, TArray<ALSystemFoliage*>& OutInstances, bool bFullyContainedOnly) const
+void ULSystemTile::GetInstancesInAABB(const FBox2D & LocalAABB, TArray<FLSysFolInstance*>& OutInstances, bool bFullyContainedOnly) const
 {
-	TArray<ALSystemFoliage*> InstancesInAABB;
-	//Broadphase.GetInstancesInBox(LocalAABB, InstancesInAABB);
+	TArray<FLSysFolInstance*> InstancesInAABB;
+	Broadphase.GetInstancesInBox(LocalAABB, InstancesInAABB);
 
 	OutInstances.Reserve(OutInstances.Num() + InstancesInAABB.Num());
-	for (ALSystemFoliage* Inst : InstancesInAABB)
+	for (FLSysFolInstance* Inst : InstancesInAABB)
 	{
 
 
 		//Check if they are fully in the AABB
-		auto box = Inst->GetBounds();
-		auto Location = box.GetCenter();
-		auto Rad = box.GetSize();
+		const float Rad = Inst->GetMaxRadius();
+		const FVector& Location = Inst->Location;
 
-		if (!bFullyContainedOnly || (Location.X - Rad.X >= LocalAABB.Min.X && Location.X + Rad.X <= LocalAABB.Max.X && Location.Y - Rad.Y >= LocalAABB.Min.Y && Location.Y + Rad.Y <= LocalAABB.Max.Y))
+		if (!bFullyContainedOnly || (Location.X - Rad >= LocalAABB.Min.X && Location.X + Rad <= LocalAABB.Max.X && Location.Y - Rad >= LocalAABB.Min.Y && Location.Y + Rad <= LocalAABB.Max.Y))
 		{
 			OutInstances.Add(Inst);
 		}
@@ -378,32 +373,32 @@ void ULSystemTile::GetInstancesInAABB(const FBox2D & LocalAABB, TArray<ALSystemF
 
 	// Sort the instances by location.
 	// This protects us from any future modifications made to the broadphase that would impact the order in which instances are located in the AABB.
-	OutInstances.Sort([](const ALSystemFoliage& A, const ALSystemFoliage& B)
+	OutInstances.Sort([](const FLSysFolInstance& A, const FLSysFolInstance& B)
 	{
-		return (B.GetActorLocation().X == A.GetActorLocation().X) ? (B.GetActorLocation().Y > A.GetActorLocation().Y) : (B.GetActorLocation().X > A.GetActorLocation().X);
+		return (B.Location.X == A.Location.X) ? (B.Location.Y > A.Location.Y) : (B.Location.X > A.Location.X);
 	});
 
 }
 
-void ULSystemTile::AddInstances(const TArray<ALSystemFoliage*>& NewInstances, const FTransform & ToLocalTM, const FBox2D & InnerLocalAABB)
+void ULSystemTile::AddInstances(const TArray<FLSysFolInstance*>& NewInstances, const FTransform & ToLocalTM, const FBox2D & InnerLocalAABB)
 {
-	for (const ALSystemFoliage* Inst : NewInstances)
+	for (const FLSysFolInstance* Inst : NewInstances)
 	{
 		// We need the local space because we're comparing it to the AABB
-		auto box = Inst->GetBounds();
-		const FVector& Location = box.GetCenter();
-		const auto Size = box.GetSize();
+		const FVector& Location = Inst->Location;	
+		const float Radius = Inst->GetMaxRadius();
 		
 		// Instances in InnerLocalAABB or on the border of the max sides of the AABB will be visible and instantiated by this tile
 		// Instances outside of the InnerLocalAABB are only used for rejection purposes. This is needed for overlapping tiles
 		// The actual instantiation of the object will be taken care of by a different tile
-		const bool bIsOutsideInnerLocalAABB = Location.X + Size.X <= InnerLocalAABB.Min.X
-											|| Location.X - Size.X > InnerLocalAABB.Max.X
-											|| Location.Y + Size.Y <= InnerLocalAABB.Min.Y
-											|| Location.Y - Size.Y > InnerLocalAABB.Max.Y;
+		const bool bIsOutsideInnerLocalAABB = Location.X + Radius <= InnerLocalAABB.Min.X
+											|| Location.X - Radius > InnerLocalAABB.Max.X
+											|| Location.Y + Radius <= InnerLocalAABB.Min.Y
+											|| Location.Y - Radius > InnerLocalAABB.Max.Y;
 
-		const FVector NewLocation = ToLocalTM.TransformPosition(Inst->GetActorLocation());
-		if (ALSystemFoliage* NewInst = NewSeed(NewLocation, Size, Inst->Type, Inst->GetGen(), bIsOutsideInnerLocalAABB))
+
+		const FVector NewLocation = ToLocalTM.TransformPosition(Inst->Location);
+		if (FLSysFolInstance* NewInst = NewSeed(NewLocation, FVector(Inst->Scale), Inst->Type, Inst->Age, bIsOutsideInnerLocalAABB))
 		{			
 			InstancesSet.Add(NewInst);
 		}
@@ -415,16 +410,12 @@ void ULSystemTile::AddInstances(const TArray<ALSystemFoliage*>& NewInstances, co
 void ULSystemTile::InstancesToArray()
 {
 	InstancesArray.Empty(InstancesSet.Num());
-	for (ALSystemFoliage* FromInst : InstancesSet)
+	for (FLSysFolInstance* FromInst : InstancesSet)
 	{
 		// Blockers do not get instantiated so don't bother putting it into array
 		if (FromInst->bBlocker == false)
 		{
-			
-			auto LSA = ALSystemFoliage::StaticClass()->GetDefaultObject<ALSystemFoliage>();
-			LSA = FromInst;
-			//new(InstancesArray)ALSystemFoliage(*FromInst);
-			InstancesArray.Push(LSA);
+			new(InstancesArray)FLSysFolInstance(*FromInst);		
 			
 		}
 	}
@@ -435,7 +426,7 @@ void ULSystemTile::Empty()
 	Broadphase.Empty();
 	InstancesArray.Empty();
 	
-	for (ALSystemFoliage* Inst : InstancesSet)
+	for (FLSysFolInstance* Inst : InstancesSet)
 	{
 		delete Inst;
 	}
@@ -477,7 +468,7 @@ void ULSystemTile::RunSimulation(const int32 MaxNumSteps, bool bOnlyInShade)
 void ULSystemTile::StepSimulation()
 {
 	if (UserCancelled()){ return; }
-	TArray<ALSystemFoliage*> NewInstances;
+	TArray<FLSysFolInstance*> NewInstances;
 	if (SimulationStep == 0)
 	{
 		AddRandomSeeds(NewInstances);
@@ -488,7 +479,7 @@ void ULSystemTile::StepSimulation()
 		SpreadSeeds(NewInstances);
 	}
 
-	for (ALSystemFoliage* Inst : NewInstances)
+	for (FLSysFolInstance* Inst : NewInstances)
 	{
 		InstancesSet.Add(Inst);
 	}
@@ -497,7 +488,7 @@ void ULSystemTile::StepSimulation()
 
 }
 
-void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
+void ULSystemTile::AddRandomSeeds(TArray<FLSysFolInstance*>& OutInstances)
 {
 	const float SizeTenM2 = ( FoliageSpawner->TileSize * FoliageSpawner->TileSize ) / ( 1000.f * 1000.f );
 
@@ -582,10 +573,10 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 			if (bSimulateOnlyInShade && LastShadeCastingIndex >= 0)
 			{
 				const int32 InstanceSpawnerIdx = TypeRandomStream.FRandRange(0, LastShadeCastingIndex);
-				const ALSystemFoliage* Spawner = InstancesArray[InstanceSpawnerIdx];
-				InitX = Spawner->GetActorLocation().X;
-				InitY = Spawner->GetActorLocation().Y;
-				NeededRadius = Spawner->Type->CollisionRadius * (Scale + Spawner->Type->GetScaleForAge(Spawner->m_Generation));
+				const FLSysFolInstance Spawner = InstancesArray[InstanceSpawnerIdx];
+				InitX = Spawner.Location.X;
+				InitY = Spawner.Location.Y;
+				NeededRadius = Spawner.Type->CollisionRadius * (Scale + Spawner.Type->GetScaleForAge(Spawner.Age));
 			}
 			else
 			{
@@ -602,7 +593,7 @@ void ULSystemTile::AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances)
 			const float X = InitX + GlobalOffset.X;
 			const float Y = InitY + GlobalOffset.Y;
 
-			if (ALSystemFoliage* NewInst = NewSeed(FVector(X, Y, 0.f), FVector(Scale), Type, NewAge))
+			if (FLSysFolInstance* NewInst = NewSeed(FVector(X, Y, 0.f), FVector(Scale), Type, NewAge))
 			{
 				OutInstances.Add(NewInst);
 			}

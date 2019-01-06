@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
-#include "LSystemFoliage.h"
 #include "Math/RandomStream.h"
 #include "LSystemBroadPhase.h"
 #include "InstancedLSystemFoliage.h"
+#include "LSystemFoliageInstance.h"
 #include "LSystemTile.generated.h"
 
 
+//struct FLSysFolInstance;
 class ULSystemFoliageSpawner;
 struct FBodyInstance;
 /**
@@ -36,7 +37,7 @@ class ULSystemTile : public UObject
 	 *	Removes a single instance from the tile
 	 *	@param Inst The instance to remove
 	 */
-	void RemoveInstance(ALSystemFoliage* Inst);
+	void RemoveInstance(FLSysFolInstance* Inst);
 
 	/** Removes all instances from the tile */
 	void RemoveInstances();
@@ -57,7 +58,7 @@ private:
 	* @param OutInstances Contains the instances within the specified AABB
 	* @param bFullyContainedOnly If true, will only get instances that are fully contained within the AABB
 	*/
-	void GetInstancesInAABB(const FBox2D& LocalAABB, TArray<ALSystemFoliage* >& OutInstances, bool bFullyContainedOnly = true) const;
+	void GetInstancesInAABB(const FBox2D& LocalAABB, TArray<FLSysFolInstance* >& OutInstances, bool bFullyContainedOnly = true) const;
 
 	/**
 	 * Adds procedural instances to the tile from some external source.
@@ -65,7 +66,7 @@ private:
 	 * @param ToLocalTM Used to transform the new instances to this tile's local space
 	 * @param InnerLocalAABB New instances outside this region will be tracked for blocking purposes only (and never spawned)
 	 */
-	void AddInstances(const TArray<ALSystemFoliage*>& NewInstances, const FTransform& ToLocalTM, const FBox2D& InnerLocalAABB);
+	void AddInstances(const TArray<FLSysFolInstance*>& NewInstances, const FTransform& ToLocalTM, const FBox2D& InnerLocalAABB);
 
 	/** Fills the InstancesArray by iterating through the contents of the InstancesSet */
 	void InstancesToArray();
@@ -82,18 +83,18 @@ private:
 	void StepSimulation();
 
 	/** Randomly seed the next step of the simulation */
-	void AddRandomSeeds(TArray<ALSystemFoliage*>& OutInstances);
+	void AddRandomSeeds(TArray<FLSysFolInstance*>& OutInstances);
 
 	/** Determines whether the instance will survive all the overlaps, and then kills the appropriate instances. Returns true if the instance survives */
-	bool HandleOverlaps(ALSystemFoliage* Instance);
+	bool HandleOverlaps(FLSysFolInstance* Instance);
 
 	/** Attempts to create a new instance and resolves any overlaps. Returns the new instance if successful for calling code to add to Instances */
-	ALSystemFoliage* NewSeed(const FVector& Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker = false);
+	FLSysFolInstance* NewSeed(const FVector& Location, FVector Size,const ULSystemFoliageType* Type, int InAge, bool bBlocker = false);
 
-	void SpreadSeeds(TArray<ALSystemFoliage*>& NewSeeds);
+	void SpreadSeeds(TArray<FLSysFolInstance*>& NewSeeds);
 	void AgeSeeds();
 
-	void MarkPendingRemoval(ALSystemFoliage* ToRemove);
+	void MarkPendingRemoval(FLSysFolInstance* ToRemove);
 	void FlushPendingRemovals();
 
 	bool UserCancelled() const;
@@ -103,11 +104,11 @@ private:
 	UPROPERTY()
 	const ULSystemFoliageSpawner* FoliageSpawner;
 
-	TSet<ALSystemFoliage*> PendingRemovals;
-	TSet<ALSystemFoliage*> InstancesSet;
+	TSet<FLSysFolInstance*> PendingRemovals;
+	TSet<FLSysFolInstance*> InstancesSet;
 
 	UPROPERTY()
-	TArray<ALSystemFoliage*> InstancesArray;
+	TArray<FLSysFolInstance> InstancesArray;
 
 	int32 SimulationStep;
 	FLSystemBroadPhase Broadphase;	
@@ -119,7 +120,7 @@ private:
 	int32 LastCancel;
 
 private:
-	float GetSeedMinDistance(const ALSystemFoliage* Instance, const float NewInstanceAge, const int32 SimulationStep);
+	float GetSeedMinDistance(const FLSysFolInstance* Instance, const float NewInstanceAge, const int32 SimulationStep);
 	float GetRandomGaussian();
 	FVector GetSeedOffset(const ULSystemFoliageType* Type, float MinDistance);
 };

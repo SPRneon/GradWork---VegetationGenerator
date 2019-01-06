@@ -2,7 +2,7 @@
 
 #include "LSystemBroadPhase.h"
 #include "LindenmayerSystem/Source/LindenmayerSystem/Public/LindemayerFoliageType.h"
-
+#include "LSystemFoliageInstance.h"
 
 
 FLSystemBroadPhase::FLSystemBroadPhase(float TileSize, float MinimumQuadTreeSize)
@@ -21,16 +21,16 @@ void FLSystemBroadPhase::Empty()
 	QuadTree.Empty();
 }
 
-FBox2D GetMaxAABB(ALSystemFoliage* Instance)
+FBox2D GetMaxAABB(FLSysFolInstance* Instance)
 {
 	const float Radius = Instance->Type->GetMaxRadius();
-	const FVector2D Location(Instance->GetActorLocation());
+	const FVector2D Location(Instance->Location);
 	const FVector2D Offset(Radius, Radius);
 	const FBox2D AABB(Location - Offset, Location + Offset);
 	return AABB;
 }
 
-void FLSystemBroadPhase::Insert(ALSystemFoliage * Instance)
+void FLSystemBroadPhase::Insert(FLSysFolInstance * Instance)
 {
 	const FBox2D MaxAABB = GetMaxAABB(Instance);
 	QuadTree.Insert(Instance, MaxAABB);
@@ -41,28 +41,28 @@ bool CircleOverlap(const FVector& ALocation, float ARadius, const FVector& BLoca
 	return (ALocation - BLocation).SizeSquared2D() <= (ARadius + BRadius)*(ARadius + BRadius);
 }
 
-bool FLSystemBroadPhase::GetOverlaps(ALSystemFoliage * Instance, TArray<FLSystemFoliageOverlap>& Overlaps) const
+bool FLSystemBroadPhase::GetOverlaps(FLSysFolInstance * Instance, TArray<FLSysFoliageOverlap>& Overlaps) const
 {
 	const float AShadeRadius     = Instance->Type->ShadeRadius;
 	const float ACollisionRadius = Instance->Type->CollisionRadius;
 
-	TArray<ALSystemFoliage*> PossibleOverlaps;
+	TArray<FLSysFolInstance*> PossibleOverlaps;
 	const FBox2D AABB = GetMaxAABB(Instance);
 	QuadTree.GetElements(AABB, PossibleOverlaps);
 	Overlaps.Reserve(Overlaps.Num() + PossibleOverlaps.Num());
 
 
-	for (ALSystemFoliage* Overlap : PossibleOverlaps)
+	for (FLSysFolInstance* Overlap : PossibleOverlaps)
 	{
 		if (Overlap != Instance)
 		{
 			//We must determine if this is an overlap of shade or an overlap of collision. If both the collision overlap wins
-			bool bCollisionOverlap = CircleOverlap(Instance->GetActorLocation(), ACollisionRadius, Overlap->GetActorLocation(), Overlap->Type->CollisionRadius);
-			bool bShadeOverlap     = CircleOverlap(Instance->GetActorLocation(), AShadeRadius, Overlap->GetActorLocation(), Overlap->Type->ShadeRadius);
+			bool bCollisionOverlap = CircleOverlap(Instance->Location, ACollisionRadius, Overlap->Location, Overlap->Type->CollisionRadius);
+			bool bShadeOverlap     = CircleOverlap(Instance->Location, AShadeRadius, Overlap->Location, Overlap->Type->ShadeRadius);
 
 			if (bCollisionOverlap || bShadeOverlap)
 			{
-				new (Overlaps)FLSystemFoliageOverlap(Instance, Overlap, bCollisionOverlap ? ESimulationOverlap::CollisionOverlap : ESimulationOverlap::ShadeOverlap);
+				new (Overlaps)FLSysFoliageOverlap(Instance, Overlap, bCollisionOverlap ? ELSysSimulationOverlap::CollisionOverlap : ELSysSimulationOverlap::ShadeOverlap);
 			}
 			
 		}
@@ -71,12 +71,12 @@ bool FLSystemBroadPhase::GetOverlaps(ALSystemFoliage * Instance, TArray<FLSystem
 	return Overlaps.Num() > 0;
 }
 
-void FLSystemBroadPhase::GetInstancesInBox(const FBox2D & Box, TArray<ALSystemFoliage*>& Instances) const
+void FLSystemBroadPhase::GetInstancesInBox(const FBox2D & Box, TArray<FLSysFolInstance*>& Instances) const
 { 
 	QuadTree.GetElements(Box, Instances);
 }
 
-void FLSystemBroadPhase::Remove(ALSystemFoliage * Instance)
+void FLSystemBroadPhase::Remove(FLSysFolInstance * Instance)
 {
 	const FBox2D AABB = GetMaxAABB(Instance);
 	const bool bRemoved = QuadTree.Remove(Instance, AABB);

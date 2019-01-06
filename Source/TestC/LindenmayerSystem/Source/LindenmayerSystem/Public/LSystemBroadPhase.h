@@ -6,7 +6,8 @@
 #include "LSystemFoliage.h"
 #include "GenericQuadTree.h"
 
-
+struct FLSysFolInstance;
+struct FLSysFoliageOverlap;
 /**
  * 
  */
@@ -16,14 +17,14 @@ public:
 	FLSystemBroadPhase(float TileSize = 0.f, float MinimumQuadTreeSize = 100.f);
 	FLSystemBroadPhase(const FLSystemBroadPhase& otherBroadPhase);
 
-	void Insert(ALSystemFoliage* Instance);
-	bool GetOverlaps(ALSystemFoliage* Instance, TArray<FLSystemFoliageOverlap>& Overlaps) const;
-	void GetInstancesInBox(const FBox2D& Box, TArray<ALSystemFoliage*>& Instances) const;
-	void Remove(ALSystemFoliage* Instance);
+	void Insert(FLSysFolInstance* Instance);
+	bool GetOverlaps(FLSysFolInstance* Instance, TArray<FLSysFoliageOverlap>& Overlaps) const;
+	void GetInstancesInBox(const FBox2D& Box, TArray<FLSysFolInstance*>& Instances) const;
+	void Remove(FLSysFolInstance* Instance);
 	void Empty();
 
 
 private:
-	TQuadTree<ALSystemFoliage*, 4> QuadTree;
+	TQuadTree<FLSysFolInstance*, 4> QuadTree;
 
 };
