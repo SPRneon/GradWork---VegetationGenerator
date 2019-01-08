@@ -169,6 +169,7 @@ private:
 
 	void CreateSplineMeshComponents(USplineComponent* spline, UTree* branch);
 	void CreateLeafMeshes(UTree* tree, USplineComponent* spline);
+	void CreateEndLeaves(UTree* tree, USplineComponent* spline);
 	void ConvertMeshes();
 
 	//TODO

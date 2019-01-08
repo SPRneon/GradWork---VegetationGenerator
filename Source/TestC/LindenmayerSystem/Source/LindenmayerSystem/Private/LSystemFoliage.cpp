@@ -40,9 +40,12 @@ ALSystemFoliage::ALSystemFoliage()
 	
 
 	
-	const ConstructorHelpers::FObjectFinder<UStaticMesh> LeafMeshObj(TEXT("/Game/VegetationGenerator/Leaf.Leaf"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> LeafMeshObj(TEXT("/Game/VegetationGenerator/Branches/Meshes/BranchLoaf.BranchLoaf"));
 	m_LeafMesh = LeafMeshObj.Object;	
 	m_IsAlive = true;
+
+	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
+	
 
 	
 	
@@ -50,8 +53,7 @@ ALSystemFoliage::ALSystemFoliage()
 
 void ALSystemFoliage::Initialize(int age, ELSystemType type)
 {
-	m_LeafMeshComponents = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeafInstanceMesh"));
-	m_LeafMeshComponents->RegisterComponent();
+
 	m_LeafMeshComponents->SetStaticMesh(m_LeafMesh);
 	m_LeafMeshComponents->SetFlags(RF_Transactional);
 	this->AddInstanceComponent(m_LeafMeshComponents);
@@ -191,9 +193,13 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 			AddOwnedComponent(newSpline);
 			m_SplineComponents.Add(newSpline);
 			newSpline->AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale);
-			UE_LOG(LogTemp,Log,TEXT("ALSystemFoliage::CreateSplineMeshComponent: %s"), *branch->GetLString())
 			CreateSplineMeshComponents(newSpline, branch);
 			CreateLeafMeshes(branch, newSpline);
+			if(branch->GetBranches().Num() < 1)
+			{
+				CreateEndLeaves(branch, newSpline);
+			}
+			
 		}
 	}
 
@@ -201,6 +207,20 @@ void ALSystemFoliage::CreateSplines(UTree* tree)
 
 
 
+void ALSystemFoliage::CreateEndLeaves(UTree* tree, USplineComponent* spline)
+{
+	FTransform newtran;
+	newtran = GetActorTransform();
+	for(int i = 0; i < 3;++i)
+	{
+		FQuat dir =  spline->GetQuaternionAtTime(0.2f * i, ESplineCoordinateSpace::World);
+		FVector pos = spline->GetLocationAtTime(0.2f * i,ESplineCoordinateSpace::World);
+
+		newtran.SetLocation(pos);
+		newtran.SetRotation(dir);
+		m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
+	}
+}
 
 
 void ALSystemFoliage::CreateFoliageTypeInstance()
@@ -213,8 +233,9 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, UTree
 	
 
 	if(spline->GetNumberOfSplinePoints() > 1){
+		UE_LOG(LogTemp,Log,TEXT("ALSystemFoliage::CreateSplineMeshComponent: %s"), *branch->GetLString())
 
-		float startWidth = ((branch->GetRoot() != nullptr) ? branch->GetRoot()->GetWidth() : branch->GetWidth());
+		float startWidth =  branch->GetWidth();
 		float endWidth = branch->GetWidth();
 		float deltaWidth = (startWidth - endWidth) / (spline->GetNumberOfSplinePoints() - 1); 
 			for(auto i = 0; i < spline->GetNumberOfSplinePoints() - 1; ++i)
@@ -223,12 +244,17 @@ void ALSystemFoliage::CreateSplineMeshComponents(USplineComponent* spline, UTree
 				auto startTans =spline->GetTangentAtSplinePoint(i,ESplineCoordinateSpace::Local);
 				auto endPos =spline->GetLocationAtSplinePoint(i+1,ESplineCoordinateSpace::Local);
 				auto endTan =spline->GetTangentAtSplinePoint(i+1,ESplineCoordinateSpace::Local);
-
-				if(startTans.X  == 0.f)
-					startTans.X = 0.2f;
 				
 				auto newSplineMesh = NewObject<USplineMeshComponent>(this);
 
+				if(startTans == endTan)
+				{
+					startTans.X += 0.01f;
+					startTans.Y += 0.01f;
+					startTans.Z += 0.01f;
+				}
+
+				
 
 				
 				newSplineMesh->SetStaticMesh(m_SplineMesh);
@@ -250,14 +276,16 @@ void ALSystemFoliage::CreateLeafMeshes(UTree* tree, USplineComponent* spline)
 	newtran = GetActorTransform();
 	for(auto i = 0; i < tree->GetLeaves().Num();++i)
 	{
-		auto ori = tree->GetLeaves()[i]->orientation.ForwardVector;
+		//auto ori = tree->GetLeaves()[i]->orientation.UpVector;
+		auto ori = spline->GetDirectionAtSplinePoint(spline->GetNumberOfSplinePoints() - 1,ESplineCoordinateSpace::Local);
+		ori = ori.RotateAngleAxis(20.f,ori.RightVector);
 		auto loc = tree->GetLeaves()[i]->location;
 		newtran.SetLocation(newtran.GetLocation()+loc);
 		newtran.SetRotation(newtran.GetRotation().RotateVector(ori).ToOrientationQuat());		
 		m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
 		ori = ori.RotateAngleAxis(180,FVector(0,0,1));
 		newtran.SetRotation(newtran.GetRotation().RotateVector(ori).ToOrientationQuat());
-		m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
+		//m_LeafMeshComponents->AddInstanceWorldSpace(newtran);
 		
 	}
 
@@ -396,10 +424,23 @@ ALSystemFoliage * ALSystemFoliage::Domination(ALSystemFoliage * A, ALSystemFolia
 
 FBox ALSystemFoliage::GetBounds() const
 {
-	FVector ori, extent;
-	this->GetActorBounds(false,ori,extent);
-	return this->GetComponentsBoundingBox(false);
-	//return FBox(ori - extent/2, ori + extent/2);
+	FVector extent;
+	FVector center;
+	for(auto spline: m_SplineComponents)
+	{
+		auto box = spline->Bounds.GetBox();
+		center += box.GetCenter();
+		if(extent.Z < box.GetExtent().Z)
+			extent.Z = box.GetExtent().Z;
+		if(extent.X < box.GetExtent().X)
+			extent.X = box.GetExtent().X;
+		if(extent.Y < box.GetExtent().Y)
+			extent.Y = box.GetExtent().Y;
+	}
+	center /= m_SplineComponents.Num();
+
+	return FBox{center - extent, center + extent};
+	
 }
 
 

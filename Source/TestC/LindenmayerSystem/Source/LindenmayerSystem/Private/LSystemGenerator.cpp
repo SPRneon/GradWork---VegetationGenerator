@@ -18,12 +18,12 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 	case ELSystemType::PLANT:
 	{
 		UE_LOG(LogTemp, Log, TEXT("This is a plant"));
-		SetState("F");
-		AddWeightedRule('F', "F[//F][&&F]",0.10f);
-		AddRule('F', "F++");
-		AddRule('F', "FF");
-		AddRule('F', "|F");
-		AddWeightedRule('F', "F[FL]", 2.0f);
+		SetState("X");
+		AddRule('X', "FF[&F][//F]");
+		AddRule('F', "F&[F]");
+		AddRule('F', "F[+F]");
+		AddRule('F', "F[^F]");
+		AddWeightedRule('F',"FL",3.f);
 		break;
 	}
 	case ELSystemType::WEED:
