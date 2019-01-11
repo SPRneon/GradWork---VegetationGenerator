@@ -3,13 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ComponentVisualizer.h"
 
-/**
- * 
- */
-class TESTC_API LSystemComponentVisualizer
+class FPrimitiveDrawInterface;
+class FSceneView;
+
+class LSystemComponentVisualizer : public FComponentVisualizer
 {
 public:
-	LSystemComponentVisualizer();
-	~LSystemComponentVisualizer();
+	//~ Begin FComponentVisualizer Interface
+	virtual void DrawVisualization(const UActorComponent* Component, const FSceneView* View, FPrimitiveDrawInterface* PDI) override;
+	//~ End FComponentVisualizer Interface
 };

@@ -116,7 +116,7 @@ public:
 
 	//Data
 	UPROPERTY(EditAnywhere)
-	int m_Generation = 4;
+	int m_Generation = 3;
 	UPROPERTY(VisibleAnywhere)
 	ELSystemType m_Type = ELSystemType::PLANT;
 	UPROPERTY(VisibleAnywhere)
@@ -166,7 +166,7 @@ public:
 private:
 	
 	void CreateFoliageTypeInstance();
-
+	void SmoothSplines();
 	void CreateSplineMeshComponents(USplineComponent* spline, UTree* branch);
 	void CreateLeafMeshes(UTree* tree, USplineComponent* spline);
 	void CreateEndLeaves(UTree* tree, USplineComponent* spline);
@@ -182,8 +182,8 @@ private:
 	UTree* m_RootTree = nullptr;
 	bool m_IsAlive = false;
 
-
-
+	TMap<UTree*, USplineComponent*> m_SplineMap;
+	
 	//Systems
 	ULSystemTurtle* m_LSystemTurtle = nullptr;
 	ULSystemGenerator* m_LSystemGenerator = nullptr;

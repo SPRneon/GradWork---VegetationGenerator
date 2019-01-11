@@ -20,7 +20,8 @@ public:
 		UFUNCTION(BlueprintCallable,Category = "LindenMayer") TArray<FVector> GetPoints() const;
 		UFUNCTION(BlueprintCallable,Category = "LindenMayer") bool ShouldDraw() const;
 		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  FString GetLString() const;
-		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  void SetLString(FString lstring);
+		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  void SetLString(FString Lstring);	
+		UFUNCTION(BlueprintCallable, Category = "Lindenmayer")  int GetLevel() const;
 
 public:
 	UTree() {};

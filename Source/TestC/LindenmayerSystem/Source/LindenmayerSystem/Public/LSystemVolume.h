@@ -34,17 +34,25 @@ class ALSystemVolume : public AVolume
 	void SpawnLSystemInstances(const TArray<FDesiredLSysInstance>& desiredInsts);
 	void SpawnLSystemInstance(const ULSystemFoliageType* Settings, const FLSysFoliageInstance& Instance, const FLSysPotentialInstance& desiredInst);
 
+	virtual void Destroyed() override;
+
+	TArray<ALSystemFoliage*>& GetFoliage() {return FoliageActors;};
 
 private:
 
 	typedef TMap<FName, TMap<ULandscapeComponent*, TArray<uint8> > > LandscapeLayerCacheData;
 
 	void CalculatePotentialInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, TArray<FLSysPotentialInstance> OutPotentialInstances[NUM_INSTANCE_BUCKETS], LandscapeLayerCacheData* LandscapeLayerCachesPtr = nullptr);
+	void CalculatePotentialInstances_ThreadSafe(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances, TArray<FLSysPotentialInstance> OutPotentialInstances[NUM_INSTANCE_BUCKETS], const int32 StartIdx, const int32 LastIdx);
+
 	bool CheckLocationForPotentialInstance(const UWorld* InWorld, const ULSystemFoliageType* Settings, const FVector& Location, const FVector& Normal, TArray<FVector>& PotentialInstanceLocations, FLSysFoliageInstanceHash& PotentialInstanceHash);
 	void AddInstances(const ULSystemFoliageType* Settings, const TArray<FDesiredLSysInstance>& DesiredInstances,const TArray<int32>& ExistingInstanceBuckets, const float Pressure = 1.0f, LandscapeLayerCacheData* LandscapeLayerCachesPtr = nullptr);
 	void AddInstance(ALSystemFoliage* LSA);
-public:
+
 	
+public:
+	UPROPERTY()
+	TArray<ALSystemFoliage*> FoliageActors;
 
 
 	// UObject interface

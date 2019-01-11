@@ -16,8 +16,7 @@ FVector2D ULSystemTurtle::m_Angle;
 float ULSystemTurtle::m_Growth;
 float ULSystemTurtle::m_Width;
 
-//General Log
-DEFINE_LOG_CATEGORY(LogLindenmayer);
+
 
 UTree* ULSystemTurtle::IterateTurtle(FString lString, USceneComponent* root, ELSystemType type)
 {
@@ -39,7 +38,7 @@ UTree* ULSystemTurtle::IterateTurtle(FString lString, USceneComponent* root, ELS
 		return StartTurtle();
 	else
 	{
-		UE_LOG(LogLindenmayer, Log, TEXT("Selected Type for %s has no variables set in the Turtle"), *root->GetName());
+		UE_LOG(LogTemp, Log, TEXT("Selected Type for %s has no variables set in the Turtle"), *root->GetName());
 		return nullptr;
 	}
 
@@ -100,6 +99,8 @@ UTree* ULSystemTurtle::StartTurtle()
 	FVector currPos = m_Tree->m_StartPos;
 	m_Tree->m_Points.Add(currPos);
 	FVector currOri = m_Tree->m_StartOri;
+	if(currOri == FVector::UpVector)
+		currOri.X = 0.01f;
 	m_Tree->m_Width = m_Width;
 
 	FVector currUp = currOri.UpVector;
@@ -126,7 +127,7 @@ UTree* ULSystemTurtle::StartTurtle()
 		case 'F':
 		{				
 			curr->SetLString(curr->m_LString + c);
-			currOri += FMath::Lerp(currOri, FVector::UpVector,.8f);
+			currOri += FMath::Lerp(currOri, FVector(0.01f,0.01f,1.001f),.8f);
 			
 			currPos += (currOri.GetSafeNormal() * (m_Growth));
 			curr->m_Draw = true;	
@@ -144,7 +145,7 @@ UTree* ULSystemTurtle::StartTurtle()
 			newTree->m_StartPos = currPos;
 			newTree->m_Points.Add(currPos);
 			newTree->m_StartOri = currOri;
-			newTree->m_Width = m_Width /** FMath::Pow(2.f/3.f, level)*/;
+			newTree->m_Width = m_Width / (2.f/3.f * level);
 			curr->m_EndOri = currOri;
 			curr->m_Branches.Add(newTree);			
 			curr = newTree;
@@ -169,14 +170,14 @@ UTree* ULSystemTurtle::StartTurtle()
 		{
 			
 			curr->SetLString(curr->m_LString + c);
-			currOri =  currOri.RotateAngleAxis(m_Angle.X,FVector(1,0,1) );
+			currOri =  currOri.RotateAngleAxis(m_Angle.X,FVector(0,0,1) );
 				
 			break;
 		}
 		case '-':
 		{
 			curr->SetLString(curr->m_LString + c);
-			currOri = currOri.RotateAngleAxis(-m_Angle.X, FVector(1,0,1));
+			currOri = currOri.RotateAngleAxis(-m_Angle.X, FVector(0,0,1));
 			break;
 		}
 		case '|':

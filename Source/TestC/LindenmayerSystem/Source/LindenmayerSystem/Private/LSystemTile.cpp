@@ -257,7 +257,8 @@ void ULSystemTile::Simulate(const ULSystemFoliageSpawner * InFoliageSpawner, con
 
 void ULSystemTile::ExtractDesiredInstances(TArray<FDesiredLSysInstance>& OutDesiredInstances, const FTransform & WorldTM, const FGuid & ProceduralGuid, const float HalfHeight, const FBodyInstance * VolumeBodyInstance, bool bEmptyTileInfo)
 {
-
+	InstancesToArray();
+	
 	const FCollisionQueryParams Params(NAME_None, FCollisionQueryParams::GetUnknownStatId(), true);
 	FHitResult Hit;
 

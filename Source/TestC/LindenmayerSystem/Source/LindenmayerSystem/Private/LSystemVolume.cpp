@@ -27,7 +27,18 @@ ALSystemVolume::ALSystemVolume(const FObjectInitializer& ObjectInitializer)
 	}
 }
 
+
 #if WITH_EDITOR
+
+
+void ALSystemVolume::Destroyed()
+{
+	for(ALSystemFoliage* LSF: FoliageActors)
+	{
+		LSF->Destroy();
+	}
+}
+
 
 void ALSystemVolume::SpawnLSystemInstances(const TArray<FDesiredLSysInstance>& desiredInsts)
 {	
@@ -55,13 +66,14 @@ void ALSystemVolume::SpawnLSystemInstance(const ULSystemFoliageType * Settings, 
 	//CurrentFoliageTraceBrushAffectedLevels.AddUnique(TargetLevel);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.OverrideLevel = TargetLevel;
-	SpawnParams.Owner = this;
+	SpawnParams.Owner = this;	
 	
 	
 	ALSystemFoliage* LSA  = GetWorld()->SpawnActor<ALSystemFoliage>(SpawnParams);
 	LSA->Initialize(desiredInst);
 	LSA->SetActorTransform(Instance.GetInstanceWorldTransform());
-
+	LSA->AttachToActor(this,FAttachmentTransformRules::KeepWorldTransform);
+	FoliageActors.Add(LSA);
 	
 
 	
@@ -76,10 +88,9 @@ void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TAr
 	}
 
 	TArray<FLSysPotentialInstance> PotentialInstanceBuckets[NUM_INSTANCE_BUCKETS];
-	if (DesiredInstances[0].PlacementMode == ELSysPlacementMode::Manual)
-	{
-		CalculatePotentialInstances(Settings, DesiredInstances, PotentialInstanceBuckets);
-	}
+	
+	CalculatePotentialInstances(Settings, DesiredInstances, PotentialInstanceBuckets);
+	
 
 	for (int32 BucketIdx = 0; BucketIdx < NUM_INSTANCE_BUCKETS; BucketIdx++)
 	{
@@ -90,6 +101,8 @@ void ALSystemVolume::AddInstances(const ULSystemFoliageType* Settings, const TAr
 		// for the number that should be in the brush region.
 		const int32 BucketOffset = (ExistingInstanceBuckets.Num() ? ExistingInstanceBuckets[BucketIdx] : 0);
 		int32 AdditionalInstances = FMath::Clamp<int32>(FMath::RoundToInt(BucketFraction * (float)(PotentialInstances.Num() - BucketOffset) * Pressure), 0, PotentialInstances.Num());
+		
+		
 		for (int32 Idx = 0; Idx < AdditionalInstances; Idx++)
 		{
 			FLSysPotentialInstance& PotentialInstance = PotentialInstances[Idx];
@@ -110,7 +123,8 @@ void ALSystemVolume::AddInstance(ALSystemFoliage * LSA)
 
 bool ALSystemVolume::CheckLocationForPotentialInstance(const UWorld* InWorld, const ULSystemFoliageType* Settings, const FVector& Location, const FVector& Normal, TArray<FVector>& PotentialInstanceLocations, FLSysFoliageInstanceHash& PotentialInstanceHash)
 {
-	return false;
+	//todo
+	return true;
 }
 
 

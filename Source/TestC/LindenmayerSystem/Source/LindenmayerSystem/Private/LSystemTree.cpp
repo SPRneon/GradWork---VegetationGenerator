@@ -54,6 +54,12 @@ TArray<UTree::Leaf*> UTree::GetLeaves()
 	return m_Leaves;
 }
 
+int UTree::GetLevel() const
+{
+	return level;
+}
+
+
 
 
 

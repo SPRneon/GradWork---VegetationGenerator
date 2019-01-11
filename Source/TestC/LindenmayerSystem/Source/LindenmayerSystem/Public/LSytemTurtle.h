@@ -8,8 +8,7 @@
 #include "LSytemTurtle.generated.h"
 
 
-//General Log
-DECLARE_LOG_CATEGORY_EXTERN(LogLindenmayer, Log, All);
+
 
 
 class UTree;

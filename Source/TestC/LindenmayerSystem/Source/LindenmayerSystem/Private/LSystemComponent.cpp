@@ -12,6 +12,7 @@
 #include "Misc/FeedbackContext.h"
 #include "PropertyEditorModule.h"
 #include "ModuleManager.h"
+#include "LSystemVolume.h"
 #include "LSystemComponentDetails.h"
 
 #define LOCTEXT_NAMESPACE "Lindenmayer"
@@ -268,19 +269,10 @@ bool ULSystemComponent::GenerateProceduralContent(TArray<FDesiredLSysInstance>& 
 
 void ULSystemComponent::RemoveProceduralContent()
 {
-	#if WITH_EDITOR
-	UWorld* World = GetWorld();
-
-	for (ULevel* Level : World->GetLevels())
+#if WITH_EDITOR
+	for(ALSystemFoliage* LSA : CastChecked<ALSystemVolume>(SpawningVolume)->FoliageActors)
 	{
-		if (Level)
-		{
-			//AInstancedFoliageActor* IFA = AInstancedFoliageActor::GetInstancedFoliageActorForLevel(Level);
-			//if (IFA)
-			//{
-			//	IFA->DeleteInstancesForProceduralFoliageComponent(this);
-			//}
-		}
+		LSA->Destroy();
 	}
 #endif
 }

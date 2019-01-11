@@ -20,10 +20,10 @@ FString ULSystemGenerator::GenerateLString(ELSystemType Type, int gen)
 		UE_LOG(LogTemp, Log, TEXT("This is a plant"));
 		SetState("X");
 		AddRule('X', "FF[&F][//F]");
-		AddRule('F', "F&[F]");
+		AddRule('F', "F-[^^F]");
 		AddRule('F', "F[+F]");
-		AddRule('F', "F[^F]");
-		AddWeightedRule('F',"FL",3.f);
+		AddRule('F', "F++F");
+		AddWeightedRule('F',"F[&FL]",3.f);
 		break;
 	}
 	case ELSystemType::WEED:
